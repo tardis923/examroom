@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>面试室编排系统</title>
+    <title>教师资格面试考场编排系统 | 智能分配面试室 + 签到表PDF</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -19,17 +19,11 @@
             color: #1a2c3e;
         }
 
-        /* 平滑滚动 */
-        html {
-            scroll-behavior: smooth;
-        }
-
         .container {
             max-width: 1300px;
             margin: 0 auto;
         }
 
-        /* 主卡片 */
         .card {
             background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(0px);
@@ -40,7 +34,6 @@
             border: 1px solid rgba(255,255,255,0.5);
         }
 
-        /* 标题区 */
         .hero {
             display: flex;
             flex-wrap: wrap;
@@ -87,7 +80,6 @@
             padding-left: 16px;
         }
 
-        /* 上传区域 - 现代玻璃质感 */
         .upload-area {
             background: #fafdff;
             border: 2px dashed #bdd9ef;
@@ -104,10 +96,6 @@
             border-color: #2c7da0;
             transform: scale(1.01);
             box-shadow: 0 12px 22px -12px rgba(28, 88, 112, 0.2);
-        }
-        .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 12px;
         }
         .btn {
             border: none;
@@ -143,10 +131,14 @@
             background: #1e6a3f;
             transform: translateY(-1px);
         }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #bfd9ef;
-            color: #2c7da0;
+        .btn-print {
+            background: #5b5f97;
+            color: white;
+            box-shadow: 0 4px 8px rgba(91,95,151,0.2);
+        }
+        .btn-print:hover {
+            background: #494d7c;
+            transform: translateY(-1px);
         }
         .info-panel {
             background: #eef4fa;
@@ -166,11 +158,6 @@
             overflow-y: auto;
             margin-top: 20px;
             box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .log-content {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
         }
         .flex-row {
             display: flex;
@@ -216,17 +203,8 @@
             margin-top: 28px;
             opacity: 0.8;
         }
-        button:disabled {
-            opacity: 0.55;
-            cursor: default;
-            transform: none;
-        }
-        @media (max-width: 680px) {
-            .card {
-                padding: 24px 20px;
-            }
-            h1 { font-size: 1.7rem; }
-            .btn { padding: 8px 18px; }
+        .print-only {
+            display: none;
         }
     </style>
 </head>
@@ -235,8 +213,8 @@
     <div class="card">
         <div class="hero">
             <div>
-                <h1>面试室编排</h1>
-                <div class="sub">根据学科编排表自动分配面试室 · 导出标准Excel文件</div>
+                <h1>教师资格面试 · 考场编排</h1>
+                <div class="sub">智能分配面试室 · 自动匹配学科编排表 · 导出Excel & 签到表PDF</div>
             </div>
             <div class="sub-badge">⚡ 官方考务系统辅助工具</div>
         </div>
@@ -244,7 +222,7 @@
         <div class="upload-area" id="uploadZone">
             <div class="upload-icon">📂📊</div>
             <div style="font-weight: 500; margin-bottom: 6px;">点击或拖拽上传Excel文件</div>
-            <small style="color: #6f8eac;">支持 .xls / .xlsx  |  必须包含工作表：考生、科目精简、学科编排</small>
+            <small style="color: #6f8eac;">支持 .xls / .xlsx  |  必须包含工作表：考生、科目精简、学科编排、面试室分布</small>
             <input type="file" id="fileInput" accept=".xls, .xlsx" style="display: none;" />
         </div>
 
@@ -260,14 +238,16 @@
         </div>
 
         <div id="resultActions" style="display: none;">
-            <hr>
-            <div class="download-section">
-                <button class="btn btn-excel" id="downloadExcelBtn">📎 下载 Excel 编排结果</button>
-                <span class="help-text">✨ 已按考试日期及时间排序 | 长数字保留文本格式</span>
-            </div>
-            <div style="margin-top: 14px; font-size: 0.75rem; color:#4c6f8f; text-align: right;">✔ 未分配考生会显示失败原因，请核对编排容量</div>
+    <hr>
+    <div class="download-section" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; gap: 16px;">
+            <button class="btn btn-excel" id="downloadExcelBtn">📎 下载 Excel 编排结果</button>
+            <button class="btn btn-print" id="printSignBtn">🖨️ 生成签到表 PDF</button>
         </div>
+        <span class="help-text">✨ 已按考试日期及时间排序 | 长数字保留文本格式 | 签到表含位置信息</span>
     </div>
+    <div style="margin-top: 14px; font-size: 0.75rem; color:#4c6f8f; text-align: right;">✔ 未分配考生会显示失败原因，请核对编排容量</div>
+</div>
     <div class="footer">
         🔄 动态识别考试日期 · 根据学科编排表列位置（B-E第一天上午 / F-I第一天下午 / J-M第二天上午 / N-Q第二天下午）自动匹配
     </div>
@@ -275,12 +255,12 @@
 
 <script>
     // ---------- 全局变量 ----------
-    let allocatedData = [];          // 最终分配结果
-    let fullToShortMap = new Map();  // 完整科目 -> 精简学科名
-    let scheduleMap = {};            // { "日期_时段": {学科: [{room, capacity, remaining}] } }
-    let latestDateOrder = [];        // [第一天日期, 第二天日期]
-    
-    // 深度清洗字段
+    let allocatedData = [];
+    let fullToShortMap = new Map();
+    let scheduleMap = {};
+    let latestDateOrder = [];
+    let roomLocationMap = new Map();  // 存储面试室对应的位置信息
+
     function deepCleanField(value) {
         if (value === undefined || value === null) return "";
         let str = String(value);
@@ -289,8 +269,7 @@
         str = str.replace(/\s+/g, " ").trim();
         return str;
     }
-    
-    // 解析日期 + 上下午 (AM/PM)  严格匹配考试院格式
+
     function parseDateAndSession(dateTimeStr) {
         if (!dateTimeStr) return null;
         const str = deepCleanField(dateTimeStr);
@@ -298,11 +277,9 @@
         if (!dateMatch) return null;
         const datePart = dateMatch[1];
         let session = null;
-        // 固定时间判断 (上午:7:30/8:00, 下午12:45/13:00)
         if (str.includes("7:30") || str.includes("07:30") || str.includes("8:00")) session = "AM";
         else if (str.includes("12:45") || str.includes("13:00")) session = "PM";
         else {
-            // fallback: 小时逻辑
             const timeMatch = str.match(/(\d{1,2}):(\d{2})/);
             if (timeMatch) {
                 const hour = parseInt(timeMatch[1]);
@@ -313,8 +290,7 @@
         if (!session) return null;
         return { date: datePart, session };
     }
-    
-    // 排序键值 (日期索引, 时段索引)
+
     function getSortKey(dateTimeStr, dateOrderList) {
         const parsed = parseDateAndSession(dateTimeStr);
         if (!parsed) return [999, 999];
@@ -322,7 +298,7 @@
         const sessionIdx = parsed.session === "AM" ? 0 : 1;
         return [dateIdx, sessionIdx];
     }
-    
+
     function sortByDateTime(data, dateOrderList) {
         return [...data].sort((a, b) => {
             const keyA = getSortKey(a.examDateRaw, dateOrderList);
@@ -331,22 +307,14 @@
             return keyA[1] - keyB[1];
         });
     }
-    
-    // 动态构建编排容量表 (依据列范围)
+
     function buildScheduleDynamic(scheduleData, date1, date2) {
         if (!scheduleData || scheduleData.length < 2) throw new Error("学科编排表数据不足");
         scheduleMap = {};
-        const sessionKeys = [
-            `${date1}_AM`,   // B-E
-            `${date1}_PM`,   // F-I
-            `${date2}_AM`,   // J-M
-            `${date2}_PM`    // N-Q
-        ];
+        const sessionKeys = [`${date1}_AM`, `${date1}_PM`, `${date2}_AM`, `${date2}_PM`];
         const colRanges = [
-            { start: 1, end: 4 },   // B-E
-            { start: 5, end: 8 },   // F-I
-            { start: 9, end: 12 },  // J-M
-            { start: 13, end: 16 }  // N-Q
+            { start: 1, end: 4 }, { start: 5, end: 8 },
+            { start: 9, end: 12 }, { start: 13, end: 16 }
         ];
         const roomColIdx = 0;
         for (let rowIdx = 1; rowIdx < scheduleData.length; rowIdx++) {
@@ -364,10 +332,7 @@
                     for (let part of parts) {
                         if (part === "") continue;
                         const match = part.match(/^(\d+)(.+)$/);
-                        if (!match) {
-                            console.warn(`无法解析单元格: ${cellVal}, 片段:${part}`);
-                            continue;
-                        }
+                        if (!match) continue;
                         const num = parseInt(match[1], 10);
                         const subShort = match[2].trim();
                         if (isNaN(num) || num <= 0) continue;
@@ -384,7 +349,6 @@
                 }
             }
         }
-        // 排序
         for (let sessionKey of sessionKeys) {
             if (scheduleMap[sessionKey]) {
                 for (let sub in scheduleMap[sessionKey]) {
@@ -393,22 +357,18 @@
             }
         }
     }
-    
-    // 分配面试室
+
     function allocateRoom(sessionKey, subjectShort) {
         const subjectRooms = scheduleMap[sessionKey]?.[subjectShort];
         if (!subjectRooms || subjectRooms.length === 0) {
             throw new Error(`时段【${sessionKey}】学科【${subjectShort}】无面试室名额`);
         }
         const target = subjectRooms.find(item => item.remaining > 0);
-        if (!target) {
-            throw new Error(`时段【${sessionKey}】学科【${subjectShort}】容量已满`);
-        }
+        if (!target) throw new Error(`时段【${sessionKey}】学科【${subjectShort}】容量已满`);
         target.remaining--;
         return target.room;
     }
-    
-    // 科目映射
+
     function buildSubjectMapping(subjectSheet) {
         fullToShortMap.clear();
         if (!subjectSheet || subjectSheet.length < 2) throw new Error("科目精简表无数据");
@@ -420,10 +380,31 @@
             if (full && short) fullToShortMap.set(full, short);
         }
     }
-    
-    // 执行分配
+
+    // 解析面试室分布表，构建 roomLocationMap
+    function buildRoomLocationMap(locationSheet) {
+        roomLocationMap.clear();
+        if (!locationSheet) {
+            console.log("未找到【面试室分布】工作表，将不显示位置信息");
+            return;
+        }
+        const locationData = XLSX.utils.sheet_to_json(locationSheet, { header: 1, defval: "" });
+        if (!locationData || locationData.length < 2) return;
+        // 假设第一列为面试室号，第二列为位置名称（可自定义列，这里按常规）
+        // 查找表头或直接取前两列
+        for (let i = 1; i < locationData.length; i++) {
+            const row = locationData[i];
+            if (!row || row.length === 0) continue;
+            let roomNum = row[0] ? String(row[0]).trim() : "";
+            let location = row[1] ? String(row[1]).trim() : "";
+            if (roomNum && location) {
+                roomLocationMap.set(roomNum, location);
+            }
+        }
+        console.log("面试室位置映射加载完成，共", roomLocationMap.size, "条");
+    }
+
     function runAllocation(studentsData, date1, date2) {
-        // 重置剩余容量
         for (let sessionKey of [`${date1}_AM`, `${date1}_PM`, `${date2}_AM`, `${date2}_PM`]) {
             if (scheduleMap[sessionKey]) {
                 for (let sub in scheduleMap[sessionKey]) {
@@ -432,11 +413,9 @@
             }
         }
         const results = [];
-        const errors = [];
         for (let stu of studentsData) {
             const parsed = parseDateAndSession(stu.examDateRaw);
             if (!parsed) {
-                errors.push(`日期解析失败: ${stu.name} (${stu.examDateRaw})`);
                 results.push({ ...stu, interviewRoom: "日期错误" });
                 continue;
             }
@@ -447,13 +426,11 @@
             else if (date === date2 && session === "AM") sessionKey = `${date2}_AM`;
             else if (date === date2 && session === "PM") sessionKey = `${date2}_PM`;
             if (!sessionKey) {
-                errors.push(`日期 ${date} 不在编排日期范围内`);
                 results.push({ ...stu, interviewRoom: "日期不在编排范围" });
                 continue;
             }
             const subjectShort = fullToShortMap.get(stu.subjectFull);
             if (!subjectShort) {
-                errors.push(`科目未映射: ${stu.name} (${stu.subjectFull})`);
                 results.push({ ...stu, interviewRoom: "科目未定义" });
                 continue;
             }
@@ -461,34 +438,32 @@
                 const room = allocateRoom(sessionKey, subjectShort);
                 results.push({ ...stu, interviewRoom: room });
             } catch (err) {
-                errors.push(`分配失败: ${stu.name} (${stu.subjectFull}) ${err.message}`);
                 results.push({ ...stu, interviewRoom: `失败:${err.message.substring(0,40)}` });
             }
         }
-        if (errors.length) {
-            console.warn(errors);
-            alert(`编排完成，但有 ${errors.length} 个异常（请见控制台或日志区）`);
-        }
         return results;
     }
-    
-    // 解析Excel主入口
+
     async function processExcelFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array', defval: "" });
-                let studentSheet = null, subjectSheet = null, scheduleSheet = null;
+                let studentSheet = null, subjectSheet = null, scheduleSheet = null, locationSheet = null;
                 for (let name of workbook.SheetNames) {
                     const n = name.trim();
                     if (n.includes("考生") || n === "考生") studentSheet = workbook.Sheets[name];
                     if (n.includes("科目精简") || n === "科目精简") subjectSheet = workbook.Sheets[name];
                     if (n.includes("学科编排") || n === "学科编排") scheduleSheet = workbook.Sheets[name];
+                    if (n.includes("面试室分布") || n === "面试室分布") locationSheet = workbook.Sheets[name];
                 }
                 if (!studentSheet) reject(new Error("未找到【考生】工作表"));
                 if (!subjectSheet) reject(new Error("未找到【科目精简】工作表"));
                 if (!scheduleSheet) reject(new Error("未找到【学科编排】工作表"));
+                
+                // 解析面试室分布（可选）
+                buildRoomLocationMap(locationSheet);
                 
                 const studentRaw = XLSX.utils.sheet_to_json(studentSheet, { header: 1, defval: "" });
                 const subjectRaw = XLSX.utils.sheet_to_json(subjectSheet, { header: 1, defval: "" });
@@ -524,16 +499,13 @@
                 }
                 if (students.length === 0) reject(new Error("考生表无有效行"));
                 
-                // 动态获取所有考试日期（恰好两天）
                 const allDates = [];
                 for (const stu of students) {
                     const p = parseDateAndSession(stu.examDateRaw);
                     if (p && !allDates.includes(p.date)) allDates.push(p.date);
                 }
                 allDates.sort();
-                if (allDates.length !== 2) {
-                    reject(new Error(`考生日期必须为两天，实际检测到 ${allDates.length} 天: ${allDates.join(", ")}`));
-                }
+                if (allDates.length !== 2) reject(new Error(`考生日期必须为两天，实际检测到 ${allDates.length} 天`));
                 const date1 = allDates[0], date2 = allDates[1];
                 buildSubjectMapping(subjectRaw);
                 buildScheduleDynamic(scheduleRaw, date1, date2);
@@ -544,8 +516,7 @@
             reader.readAsArrayBuffer(file);
         });
     }
-    
-    // 导出Excel (排序后，强制文本)
+
     function downloadExcel(data, dateOrderList) {
         if (!data || data.length === 0) { alert("无数据可导出"); return; }
         const sorted = sortByDateTime(data, dateOrderList);
@@ -563,7 +534,6 @@
         }
         const ws = XLSX.utils.aoa_to_sheet(sheetData);
         const range = XLSX.utils.decode_range(ws['!ref']);
-        // 强制准考证号(列B索引1) 和证件号(列C索引2) 为文本格式
         for (let R = range.s.r + 1; R <= range.e.r; R++) {
             const bAddr = { c: 1, r: R };
             const bRef = XLSX.utils.encode_cell(bAddr);
@@ -577,7 +547,117 @@
         XLSX.utils.book_append_sheet(wb, ws, "面试室安排");
         XLSX.writeFile(wb, "面试室编排结果.xlsx");
     }
-    
+
+    // 生成单个面试室的签到表HTML (内部样式内联，支持位置显示)
+    function buildSignHtmlForSession(dateStr, sessionType, roomDataMap, locationMap) {
+        const rooms = Array.from(roomDataMap.keys()).sort((a,b)=>parseInt(a)-parseInt(b));
+        const displayDate = dateStr.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2月$3日');
+        const sessionCN = sessionType === 'AM' ? '上午' : '下午';
+        let html = '';
+        for (let room of rooms) {
+            const students = roomDataMap.get(room);
+            const location = locationMap ? locationMap.get(room) : "";
+            const titleWithLocation = location ? `考生签到表（${location}）` : "考生签到表";
+            
+            html += `<div class="sign-table-container" style="page-break-after: always;">`;
+            html += `<div class="sign-header"><h2>${titleWithLocation}</h2>`;
+            html += `<div class="header-info">`;
+            html += `<div class="left-info">面试室：${room} &nbsp;&nbsp; 应考人数：${students.length}</div>`;
+            html += `<div class="right-info">考试时间：${displayDate} ${sessionCN} </div>`;
+            html += `</div></div>`;
+            html += `<table style="width:100%; border-collapse:collapse; font-size:10.5pt; margin-top:10px;">`;
+            html += `<thead>`;
+            html += `<tr>
+                        <th style="width:5%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">序号</th>
+                        <th style="width:14%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">考生姓名</th>
+                        <th style="width:16%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">准考证号</th>
+                        <th style="width:16%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">证件号</th>
+                        <th style="width:25%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">考试科目</th>
+                        <th style="width:9%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">抽签顺序</th>
+                        <th style="width:15%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">考生签名</th>
+                      </tr>`;
+            html += `</thead><tbody>`;
+            students.forEach((stu, idx) => {
+                html += `<tr>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${idx+1}</td>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.name)}</td>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.examId)}</td>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.idCard)}</td>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.subjectFull)}</td>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;"></td>
+                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;"></td>
+                          </tr>`;
+            });
+            html += `</tbody></table></div>`;
+        }
+        return html;
+    }
+
+    // 直接生成全部四个半天所有面试室的完整签到表PDF
+    function printAllSessions() {
+        if (!allocatedData || allocatedData.length === 0 || latestDateOrder.length !== 2) {
+            alert("请先上传并编排数据");
+            return;
+        }
+        const [date1, date2] = latestDateOrder;
+        
+        // 按半天分组考生
+        const sessionGroups = {
+            am1: { date: date1, session: "AM", students: [] },
+            pm1: { date: date1, session: "PM", students: [] },
+            am2: { date: date2, session: "AM", students: [] },
+            pm2: { date: date2, session: "PM", students: [] }
+        };
+        
+        for (let stu of allocatedData) {
+            const parsed = parseDateAndSession(stu.examDateRaw);
+            if (!parsed) continue;
+            const { date, session } = parsed;
+            let groupKey = null;
+            if (date === date1 && session === "AM") groupKey = "am1";
+            else if (date === date1 && session === "PM") groupKey = "pm1";
+            else if (date === date2 && session === "AM") groupKey = "am2";
+            else if (date === date2 && session === "PM") groupKey = "pm2";
+            if (groupKey && stu.interviewRoom && !stu.interviewRoom.includes("失败") && !stu.interviewRoom.includes("日期错误")) {
+                sessionGroups[groupKey].students.push(stu);
+            }
+        }
+        
+        let fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>考生签到表（全部考场）</title>`;
+        fullHtml += `<style>
+            @page { size: A4 landscape; margin: 1.2cm 1cm; }
+            body { margin: 0; padding: 0; font-family: 'SimHei', 'Microsoft YaHei', sans-serif; background: white; }
+            .sign-table-container { page-break-after: always; margin: 0; }
+            .sign-header { text-align: center; margin-bottom: 15px; }
+            .sign-header h2 { margin: 0 0 8px 0; font-size: 18pt; }
+            .header-info { display: flex; justify-content: space-between; align-items: baseline; font-size: 12pt; margin-top: 6px; }
+            .left-info { text-align: left; }
+            .right-info { text-align: right; }
+        </style></head><body>`;
+        
+        // 按顺序输出四个半天：第一天上午、第一天下午、第二天上午、第二天下午
+        const order = ["am1", "pm1", "am2", "pm2"];
+        for (let key of order) {
+            const group = sessionGroups[key];
+            if (!group || group.students.length === 0) continue;
+            // 按面试室分组
+            const roomMap = new Map();
+            for (let stu of group.students) {
+                const room = stu.interviewRoom;
+                if (!roomMap.has(room)) roomMap.set(room, []);
+                roomMap.get(room).push(stu);
+            }
+            fullHtml += buildSignHtmlForSession(group.date, group.session, roomMap, roomLocationMap);
+        }
+        fullHtml += `</body></html>`;
+        
+        const printWindow = window.open();
+        printWindow.document.write(fullHtml);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    }
+
     // UI 元素
     const fileInput = document.getElementById("fileInput");
     const uploadZone = document.getElementById("uploadZone");
@@ -588,13 +668,13 @@
     const resultActions = document.getElementById("resultActions");
     const statusPanel = document.getElementById("statusPanel");
     const downloadExcelBtn = document.getElementById("downloadExcelBtn");
+    const printSignBtn = document.getElementById("printSignBtn");
     
     function appendLog(msg, isError = false) {
         const div = document.createElement("div");
         div.textContent = msg;
         div.style.color = isError ? "#ffbba0" : "#c0e0ff";
         div.style.marginBottom = "5px";
-        div.style.fontSize = "0.8rem";
         logContent.appendChild(div);
         logContent.scrollTop = logContent.scrollHeight;
     }
@@ -618,26 +698,17 @@
             const succ = allocated.filter(r => !r.interviewRoom?.startsWith("失败") && r.interviewRoom !== "日期错误" && r.interviewRoom !== "科目未定义" && r.interviewRoom !== "日期不在编排范围").length;
             appendLog(`✅ 编排完成！共 ${allocated.length} 人，成功分配 ${succ} 人，异常 ${allocated.length-succ} 人。`);
             appendLog(`📅 识别日期: ${date1} / ${date2}`);
+            if (roomLocationMap.size > 0) {
+                appendLog(`📍 已加载 ${roomLocationMap.size} 个面试室位置信息`);
+            } else {
+                appendLog(`⚠️ 未找到【面试室分布】工作表或数据为空，签到表标题将不显示位置`);
+            }
             statusText.innerText = `完成 (${succ}/${allocated.length})`;
             statsInfo.innerText = `总考生 ${allocated.length} | 已分配 ${succ}`;
             resultActions.style.display = "block";
             const sample = allocated.find(r => r.subjectFull === "141-幼儿园");
             if (sample) appendLog(`🍎 幼儿园样例: ${sample.name} → ${sample.examDateRaw} 面试室 ${sample.interviewRoom}`);
-            let hasRemain = false;
-            for (let sk of [`${date1}_AM`,`${date1}_PM`,`${date2}_AM`,`${date2}_PM`]) {
-                if (scheduleMap[sk]) {
-                    for (let sub in scheduleMap[sk]) {
-                        for (let r of scheduleMap[sk][sub]) {
-                            if (r.remaining > 0) {
-                                appendLog(`📌 剩余名额: ${sk} ${sub} 面试室${r.room} 剩${r.remaining}`);
-                                hasRemain = true;
-                            }
-                        }
-                    }
-                }
-            }
-            if (!hasRemain) appendLog("✨ 所有容量恰好分配完毕，无剩余名额。");
-            appendLog("💡 导出文件已按日期+时间排序，长数字已转为文本格式。");
+            appendLog("💡 点击「生成签到表PDF」将直接输出全部四个半天所有面试室的签到表（A4横向），标题会显示位置信息。");
         } catch (err) {
             appendLog(`❌ 错误: ${err.message}`, true);
             statusText.innerText = "处理失败";
@@ -652,6 +723,7 @@
             downloadExcel(allocatedData, latestDateOrder);
         } else alert("没有编排结果，请先上传文件");
     });
+    printSignBtn.addEventListener("click", printAllSessions);
     uploadZone.addEventListener("dragover", (e) => { e.preventDefault(); uploadZone.style.background = "#ffffff"; });
     uploadZone.addEventListener("dragleave", () => { uploadZone.style.background = "#fafdff"; });
     uploadZone.addEventListener("drop", (e) => {
