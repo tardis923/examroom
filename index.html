@@ -3,208 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>教师资格面试考场编排系统 | 智能分配面试室 + 签到表PDF</title>
+    <title>教师资格面试考场编排系统 | 面试室签到表</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: linear-gradient(145deg, #eef5fc 0%, #e0eef8 100%);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            padding: 40px 24px;
-            color: #1a2c3e;
-        }
-
-        .container {
-            max-width: 1300px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(0px);
-            border-radius: 48px;
-            box-shadow: 0 20px 35px -12px rgba(0, 20, 40, 0.2), 0 1px 2px rgba(0,0,0,0.02);
-            padding: 32px 36px;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255,255,255,0.5);
-        }
-
-        .hero {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 28px;
-            border-bottom: 2px solid #dcebf5;
-            padding-bottom: 20px;
-        }
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #1a6d8f, #0e4d6b);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.3px;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-        }
-        h1::before {
-            content: "🎓";
-            font-size: 2rem;
-            background: none;
-            -webkit-background-clip: unset;
-            color: #2c7da0;
-        }
-        .sub-badge {
-            background: #e4f0fa;
-            padding: 6px 16px;
-            border-radius: 60px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #1a6d8f;
-            border: 1px solid #cde4f2;
-        }
-        .sub {
-            color: #4a627a;
-            font-weight: 450;
-            margin-top: 8px;
-            font-size: 1rem;
-            border-left: 3px solid #2c7da0;
-            padding-left: 16px;
-        }
-
-        .upload-area {
-            background: #fafdff;
-            border: 2px dashed #bdd9ef;
-            border-radius: 44px;
-            padding: 42px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            margin: 20px 0 16px 0;
-            box-shadow: inset 0 1px 2px #ffffff80, 0 4px 8px rgba(0, 0, 0, 0.02);
-        }
-        .upload-area:hover {
-            background: #ffffff;
-            border-color: #2c7da0;
-            transform: scale(1.01);
-            box-shadow: 0 12px 22px -12px rgba(28, 88, 112, 0.2);
-        }
-        .btn {
-            border: none;
-            font-weight: 600;
-            padding: 12px 32px;
-            border-radius: 48px;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #eef3fc;
-            color: #1e5a77;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .btn-primary {
-            background: #2c7da0;
-            color: white;
-            box-shadow: 0 4px 8px rgba(44,125,160,0.2);
-        }
-        .btn-primary:hover {
-            background: #1e6887;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 18px -6px rgba(44,125,160,0.4);
-        }
-        .btn-excel {
-            background: #2a7f4b;
-            color: white;
-            box-shadow: 0 4px 8px rgba(42,127,75,0.2);
-        }
-        .btn-excel:hover {
-            background: #1e6a3f;
-            transform: translateY(-1px);
-        }
-        .btn-print {
-            background: #5b5f97;
-            color: white;
-            box-shadow: 0 4px 8px rgba(91,95,151,0.2);
-        }
-        .btn-print:hover {
-            background: #494d7c;
-            transform: translateY(-1px);
-        }
-        .info-panel {
-            background: #eef4fa;
-            border-radius: 36px;
-            padding: 18px 24px;
-            margin-top: 24px;
-            backdrop-filter: blur(2px);
-        }
-        .log-area {
-            background: #1e2f3c;
-            border-radius: 32px;
-            padding: 20px 24px;
-            font-family: 'JetBrains Mono', 'SF Mono', monospace;
-            font-size: 0.8rem;
-            color: #cde9fb;
-            max-height: 280px;
-            overflow-y: auto;
-            margin-top: 20px;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .flex-row {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-        .badge {
-            background: white;
-            border-radius: 60px;
-            padding: 6px 18px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: #1a6d8f;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .download-section {
-            margin-top: 24px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: 16px;
-            align-items: center;
-        }
-        .help-text {
-            font-size: 0.7rem;
-            background: #eef2f7;
-            padding: 8px 16px;
-            border-radius: 40px;
-            color: #3e6a8c;
-        }
-        hr {
-            margin: 24px 0 12px 0;
-            border: none;
-            height: 2px;
-            background: linear-gradient(to right, #cde0ef, transparent);
-        }
-        .footer {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #5b7e9e;
-            margin-top: 28px;
-            opacity: 0.8;
-        }
-        .print-only {
-            display: none;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(145deg, #eef5fc 0%, #e0eef8 100%); font-family: 'Inter', system-ui, sans-serif; padding: 40px 24px; color: #1a2c3e; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        .card { background: rgba(255,255,255,0.96); border-radius: 48px; box-shadow: 0 20px 35px -12px rgba(0,20,40,0.2); padding: 32px 36px; border: 1px solid rgba(255,255,255,0.5); }
+        .hero { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; border-bottom: 2px solid #dcebf5; padding-bottom: 20px; }
+        h1 { font-size: 2.2rem; font-weight: 700; background: linear-gradient(135deg, #1a6d8f, #0e4d6b); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-flex; align-items: center; gap: 12px; }
+        h1::before { content: "🎓"; font-size: 2rem; color: #2c7da0; }
+        .sub-badge { background: #e4f0fa; padding: 6px 16px; border-radius: 60px; font-size: 0.85rem; font-weight: 500; color: #1a6d8f; border: 1px solid #cde4f2; }
+        .sub { color: #4a627a; font-weight: 450; margin-top: 8px; font-size: 1rem; border-left: 3px solid #2c7da0; padding-left: 16px; }
+        .upload-area { background: #fafdff; border: 2px dashed #bdd9ef; border-radius: 44px; padding: 42px 24px; text-align: center; cursor: pointer; transition: all 0.25s ease; margin: 20px 0 16px 0; }
+        .upload-area:hover { background: #ffffff; border-color: #2c7da0; transform: scale(1.01); }
+        .btn { border: none; font-weight: 600; padding: 12px 32px; border-radius: 48px; font-size: 0.95rem; cursor: pointer; background: #2a7f4b; color: white; display: inline-flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .btn:hover { background: #1e6a3f; transform: translateY(-1px); }
+        .btn-excel { background: #2c7da0; }
+        .btn-excel:hover { background: #1e6887; }
+        .info-panel { background: #eef4fa; border-radius: 36px; padding: 18px 24px; margin-top: 24px; }
+        .log-area { background: #1e2f3c; border-radius: 32px; padding: 20px 24px; font-family: monospace; font-size: 0.8rem; color: #cde9fb; max-height: 280px; overflow-y: auto; margin-top: 20px; }
+        .flex-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+        .badge { background: white; border-radius: 60px; padding: 6px 18px; font-size: 0.8rem; font-weight: 500; color: #1a6d8f; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; justify-content: flex-end; }
+        .footer { text-align: center; font-size: 0.75rem; color: #5b7e9e; margin-top: 28px; }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; color: white; font-size: 18px; flex-direction: column; gap: 15px; }
+        .loading-spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #2a7f4b; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* ---------- 打印（矢量 PDF） ---------- */
+        #printRoot { display: none; }
+        .pp-page { width: 297mm; height: 209.8mm; position: relative; overflow: hidden; background: #fff; page-break-after: always; break-after: page; }
+        .pp-page:last-child { page-break-after: auto; break-after: auto; }
+        .pp-header { position: absolute; top: 15mm; right: 15mm; font-size: 9pt; font-weight: bold; font-family: "SimSun","宋体",serif; }
+        .pp-body { position: absolute; left: 15mm; right: 15mm; top: 20mm; bottom: 20mm; }
+        .pp-title { margin: 0; text-align: center; font-size: 14pt; font-weight: 700; -webkit-text-stroke: 0.4pt #000; font-family: "SimSun","宋体",serif; }
+        .pp-meta { display: flex; justify-content: space-between; font-size: 9pt; margin: 2.5mm 0 2mm; font-family: "SimSun","宋体",serif; }
+        .pp-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; font-family: "SimSun","宋体",serif; }
+        .pp-table th, .pp-table td { border: 0.3mm solid #000; height: 10.3mm; line-height: 10.3mm; text-align: center; padding: 0 1mm; font-weight: 400; overflow: hidden; white-space: nowrap; }
+        .pp-table td.pp-empty { border: none; }
+        @media print {
+            @page { size: A4 landscape; margin: 0; }
+            body { padding: 0 !important; background: #fff !important; }
+            .container, .loading-overlay, #logContainer { display: none !important; }
+            #printRoot { display: block !important; }
         }
     </style>
 </head>
@@ -214,166 +57,81 @@
         <div class="hero">
             <div>
                 <h1>教师资格面试 · 考场编排</h1>
-                <div class="sub">智能分配面试室 · 自动匹配学科编排表 · 导出Excel & 签到表PDF</div>
+                <div class="sub">智能分配面试室 · 面试室签到表</div>
             </div>
-            <div class="sub-badge">⚡ 官方考务系统辅助工具</div>
+            <div class="sub-badge">⚡ 四个半天合并为 1 个 PDF · 多组页眉</div>
         </div>
-
         <div class="upload-area" id="uploadZone">
             <div class="upload-icon">📂📊</div>
             <div style="font-weight: 500; margin-bottom: 6px;">点击或拖拽上传Excel文件</div>
-            <small style="color: #6f8eac;">支持 .xls / .xlsx  |  必须包含工作表：考生、科目精简、学科编排、面试室分布</small>
+            <small style="color: #6f8eac;">必须包含工作表：考生、科目精简、学科编排、面试室分布（含位置）</small>
             <input type="file" id="fileInput" accept=".xls, .xlsx" style="display: none;" />
         </div>
-
         <div class="info-panel" id="statusPanel" style="display: none;">
             <div class="flex-row">
-                <span>📋 当前状态：<strong id="statusText">就绪</strong></span>
+                <span>📋 状态：<strong id="statusText">就绪</strong></span>
                 <span class="badge" id="statsInfo">—</span>
             </div>
         </div>
-
         <div id="logContainer" class="log-area" style="display: none;">
-            <div class="log-content" id="logContent">⚙️ 等待文件处理...</div>
+            <div id="logContent">⚙️ 等待处理...</div>
         </div>
-
         <div id="resultActions" style="display: none;">
-    <hr>
-    <div class="download-section" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
-        <div style="display: flex; gap: 16px;">
-            <button class="btn btn-excel" id="downloadExcelBtn">📎 下载 Excel 编排结果</button>
-            <button class="btn btn-print" id="printSignBtn">🖨️ 生成签到表 PDF</button>
+            <div class="button-group">
+                <button class="btn btn-excel" id="downloadExcelBtn">📎 下载 Excel 编排结果</button>
+                <button class="btn" id="printAllBtn">🖨️ 打印 / 导出 PDF（矢量）</button>
+            </div>
+            <div id="headerPanel" style="background:#f4f9ff; border-radius:28px; padding:16px 20px; margin-top:18px;">
+                <div style="font-weight:600; margin-bottom:10px; color:#1a6d8f;">右上角页眉（每组生成一册，留空则该册不打印页眉）</div>
+                <div id="headerRows" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:12px;">
+                    <button class="btn btn-excel" id="addHeaderGroupBtn" type="button" style="padding:8px 20px; font-size:0.82rem;">＋ 增加一组</button>
+                    <span style="font-size:0.82rem; color:#5b7e9e;">每组 <strong id="pagesPerGroup">—</strong> 页，合计 <strong id="totalPages">—</strong> 页</span>
+                </div>
+            </div>
+            <p style="font-size:0.7rem; margin-top:12px; text-align:right;">✅ 表格居中对齐，字号优化，确保完整显示在一页内</p>
         </div>
-        <span class="help-text">✨ 已按考试日期及时间排序 | 长数字保留文本格式 | 签到表含位置信息</span>
     </div>
-    <div style="margin-top: 14px; font-size: 0.75rem; color:#4c6f8f; text-align: right;">✔ 未分配考生会显示失败原因，请核对编排容量</div>
+    <div class="footer">本页面输出签到表及面试室编排结果，四个半天合并为 1 个 PDF，可按组自定义右上角页眉</div>
 </div>
-    <div class="footer">
-        🔄 动态识别考试日期 · 根据学科编排表列位置（B-E第一天上午 / F-I第一天下午 / J-M第二天上午 / N-Q第二天下午）自动匹配
-    </div>
-</div>
-
+<div id="printRoot"></div>
 <script>
-    // ---------- 全局变量 ----------
+    // ==================== 全局变量 ====================
     let allocatedData = [];
     let fullToShortMap = new Map();
     let scheduleMap = {};
     let latestDateOrder = [];
-    let roomLocationMap = new Map();  // 存储面试室对应的位置信息
+    let roomRelationMap = new Map();
+    let isGenerating = false;
+    let headerValues = ["候考室", "抽题室", "备课室", "面试室"];
 
-    function deepCleanField(value) {
-        if (value === undefined || value === null) return "";
-        let str = String(value);
-        str = str.replace(/[\r\n\t]+/g, " ");
-        str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
-        str = str.replace(/\s+/g, " ").trim();
-        return str;
+    function deepClean(v) { if (v == null) return ""; return String(v).replace(/[\r\n\t]+/g, " ").trim(); }
+    
+    function getFullSubjectName(subjectFull) {
+        if (!subjectFull) return "";
+        let parts = subjectFull.split('-');
+        return parts.length > 1 ? parts[1] : subjectFull;
     }
-
-    function parseDateAndSession(dateTimeStr) {
-        if (!dateTimeStr) return null;
-        const str = deepCleanField(dateTimeStr);
-        const dateMatch = str.match(/(\d{4}-\d{2}-\d{2})/);
-        if (!dateMatch) return null;
-        const datePart = dateMatch[1];
+    
+    function parseDateAndSession(str) {
+        if (!str) return null;
+        let s = deepClean(str);
+        let dm = s.match(/(\d{4}-\d{2}-\d{2})/);
+        if (!dm) return null;
+        let date = dm[1];
         let session = null;
-        if (str.includes("7:30") || str.includes("07:30") || str.includes("8:00")) session = "AM";
-        else if (str.includes("12:45") || str.includes("13:00")) session = "PM";
-        else {
-            const timeMatch = str.match(/(\d{1,2}):(\d{2})/);
-            if (timeMatch) {
-                const hour = parseInt(timeMatch[1]);
-                if (hour >= 7 && hour <= 8) session = "AM";
-                else if (hour >= 12 && hour <= 13) session = "PM";
-            }
-        }
+        if (s.includes("7:30") || s.includes("07:30") || s.includes("8:00")) session = "AM";
+        else if (s.includes("12:45") || s.includes("13:00")) session = "PM";
+        else { let tm = s.match(/(\d{1,2}):(\d{2})/); if (tm) { let h = parseInt(tm[1]); if (h >= 7 && h <= 8) session = "AM"; else if (h >= 12 && h <= 13) session = "PM"; } }
         if (!session) return null;
-        return { date: datePart, session };
+        return { date, session };
     }
 
-    function getSortKey(dateTimeStr, dateOrderList) {
-        const parsed = parseDateAndSession(dateTimeStr);
-        if (!parsed) return [999, 999];
-        const dateIdx = dateOrderList.indexOf(parsed.date);
-        const sessionIdx = parsed.session === "AM" ? 0 : 1;
-        return [dateIdx, sessionIdx];
-    }
-
-    function sortByDateTime(data, dateOrderList) {
-        return [...data].sort((a, b) => {
-            const keyA = getSortKey(a.examDateRaw, dateOrderList);
-            const keyB = getSortKey(b.examDateRaw, dateOrderList);
-            if (keyA[0] !== keyB[0]) return keyA[0] - keyB[0];
-            return keyA[1] - keyB[1];
-        });
-    }
-
-    function buildScheduleDynamic(scheduleData, date1, date2) {
-        if (!scheduleData || scheduleData.length < 2) throw new Error("学科编排表数据不足");
-        scheduleMap = {};
-        const sessionKeys = [`${date1}_AM`, `${date1}_PM`, `${date2}_AM`, `${date2}_PM`];
-        const colRanges = [
-            { start: 1, end: 4 }, { start: 5, end: 8 },
-            { start: 9, end: 12 }, { start: 13, end: 16 }
-        ];
-        const roomColIdx = 0;
-        for (let rowIdx = 1; rowIdx < scheduleData.length; rowIdx++) {
-            const row = scheduleData[rowIdx];
-            if (!row || row.length === 0) continue;
-            let roomNumber = row[roomColIdx] ? String(row[roomColIdx]).trim() : "";
-            if (roomNumber === "") continue;
-            for (let sIdx = 0; sIdx < sessionKeys.length; sIdx++) {
-                const sessionKey = sessionKeys[sIdx];
-                const range = colRanges[sIdx];
-                for (let col = range.start; col <= range.end; col++) {
-                    let cellVal = row[col] ? String(row[col]).trim() : "";
-                    if (cellVal === "") continue;
-                    const parts = cellVal.split(/\s+/);
-                    for (let part of parts) {
-                        if (part === "") continue;
-                        const match = part.match(/^(\d+)(.+)$/);
-                        if (!match) continue;
-                        const num = parseInt(match[1], 10);
-                        const subShort = match[2].trim();
-                        if (isNaN(num) || num <= 0) continue;
-                        if (!scheduleMap[sessionKey]) scheduleMap[sessionKey] = {};
-                        if (!scheduleMap[sessionKey][subShort]) scheduleMap[sessionKey][subShort] = [];
-                        let existing = scheduleMap[sessionKey][subShort].find(item => item.room === roomNumber);
-                        if (existing) {
-                            existing.capacity += num;
-                            existing.remaining += num;
-                        } else {
-                            scheduleMap[sessionKey][subShort].push({ room: roomNumber, capacity: num, remaining: num });
-                        }
-                    }
-                }
-            }
-        }
-        for (let sessionKey of sessionKeys) {
-            if (scheduleMap[sessionKey]) {
-                for (let sub in scheduleMap[sessionKey]) {
-                    scheduleMap[sessionKey][sub].sort((a,b) => (parseInt(a.room)||0) - (parseInt(b.room)||0));
-                }
-            }
-        }
-    }
-
-    function allocateRoom(sessionKey, subjectShort) {
-        const subjectRooms = scheduleMap[sessionKey]?.[subjectShort];
-        if (!subjectRooms || subjectRooms.length === 0) {
-            throw new Error(`时段【${sessionKey}】学科【${subjectShort}】无面试室名额`);
-        }
-        const target = subjectRooms.find(item => item.remaining > 0);
-        if (!target) throw new Error(`时段【${sessionKey}】学科【${subjectShort}】容量已满`);
-        target.remaining--;
-        return target.room;
-    }
-
-    function buildSubjectMapping(subjectSheet) {
+    function buildSubjectMapping(sheet) {
         fullToShortMap.clear();
-        if (!subjectSheet || subjectSheet.length < 2) throw new Error("科目精简表无数据");
-        for (let i = 1; i < subjectSheet.length; i++) {
-            const row = subjectSheet[i];
+        if (!sheet || sheet.length < 2) return;
+        for (let i = 1; i < sheet.length; i++) {
+            let row = sheet[i];
             if (!row || row.length < 2) continue;
             let full = row[0] ? String(row[0]).trim() : "";
             let short = row[1] ? String(row[1]).trim() : "";
@@ -381,357 +139,750 @@
         }
     }
 
-    // 解析面试室分布表，构建 roomLocationMap
-    function buildRoomLocationMap(locationSheet) {
-        roomLocationMap.clear();
-        if (!locationSheet) {
-            console.log("未找到【面试室分布】工作表，将不显示位置信息");
-            return;
-        }
-        const locationData = XLSX.utils.sheet_to_json(locationSheet, { header: 1, defval: "" });
-        if (!locationData || locationData.length < 2) return;
-        // 假设第一列为面试室号，第二列为位置名称（可自定义列，这里按常规）
-        // 查找表头或直接取前两列
-        for (let i = 1; i < locationData.length; i++) {
-            const row = locationData[i];
+    function buildScheduleDynamic(data, d1, d2) {
+        scheduleMap = {};
+        let keys = [`${d1}_AM`, `${d1}_PM`, `${d2}_AM`, `${d2}_PM`];
+        let ranges = [{ start: 1, end: 4 }, { start: 5, end: 8 }, { start: 9, end: 12 }, { start: 13, end: 16 }];
+        for (let i = 1; i < data.length; i++) {
+            let row = data[i];
             if (!row || row.length === 0) continue;
-            let roomNum = row[0] ? String(row[0]).trim() : "";
-            let location = row[1] ? String(row[1]).trim() : "";
-            if (roomNum && location) {
-                roomLocationMap.set(roomNum, location);
-            }
-        }
-        console.log("面试室位置映射加载完成，共", roomLocationMap.size, "条");
-    }
-
-    function runAllocation(studentsData, date1, date2) {
-        for (let sessionKey of [`${date1}_AM`, `${date1}_PM`, `${date2}_AM`, `${date2}_PM`]) {
-            if (scheduleMap[sessionKey]) {
-                for (let sub in scheduleMap[sessionKey]) {
-                    for (let item of scheduleMap[sessionKey][sub]) item.remaining = item.capacity;
+            let room = row[0] ? String(row[0]).trim() : "";
+            if (!room) continue;
+            for (let s = 0; s < keys.length; s++) {
+                let key = keys[s], rg = ranges[s];
+                for (let c = rg.start; c <= rg.end; c++) {
+                    let val = row[c] ? String(row[c]).trim() : "";
+                    if (!val) continue;
+                    let parts = val.split(/\s+/);
+                    for (let p of parts) {
+                        let m = p.match(/^(\d+)(.+)$/);
+                        if (!m) continue;
+                        let num = parseInt(m[1]), sub = m[2].trim();
+                        if (isNaN(num)) continue;
+                        if (!scheduleMap[key]) scheduleMap[key] = {};
+                        if (!scheduleMap[key][sub]) scheduleMap[key][sub] = [];
+                        let ex = scheduleMap[key][sub].find(x => x.room === room);
+                        if (ex) { ex.capacity += num; ex.remaining += num; }
+                        else scheduleMap[key][sub].push({ room, capacity: num, remaining: num });
+                    }
                 }
             }
         }
-        const results = [];
-        for (let stu of studentsData) {
-            const parsed = parseDateAndSession(stu.examDateRaw);
-            if (!parsed) {
-                results.push({ ...stu, interviewRoom: "日期错误" });
-                continue;
-            }
-            const { date, session } = parsed;
-            let sessionKey = null;
-            if (date === date1 && session === "AM") sessionKey = `${date1}_AM`;
-            else if (date === date1 && session === "PM") sessionKey = `${date1}_PM`;
-            else if (date === date2 && session === "AM") sessionKey = `${date2}_AM`;
-            else if (date === date2 && session === "PM") sessionKey = `${date2}_PM`;
-            if (!sessionKey) {
-                results.push({ ...stu, interviewRoom: "日期不在编排范围" });
-                continue;
-            }
-            const subjectShort = fullToShortMap.get(stu.subjectFull);
-            if (!subjectShort) {
-                results.push({ ...stu, interviewRoom: "科目未定义" });
-                continue;
-            }
-            try {
-                const room = allocateRoom(sessionKey, subjectShort);
-                results.push({ ...stu, interviewRoom: room });
-            } catch (err) {
-                results.push({ ...stu, interviewRoom: `失败:${err.message.substring(0,40)}` });
-            }
-        }
-        return results;
+        for (let k of keys) if (scheduleMap[k]) for (let s in scheduleMap[k]) scheduleMap[k][s].sort((a, b) => parseInt(a.room) - parseInt(b.room));
     }
 
-    async function processExcelFile(file) {
+    function allocateRoom(sessionKey, sub) {
+        let arr = scheduleMap[sessionKey]?.[sub];
+        if (!arr || !arr.length) throw new Error(`无容量:${sessionKey} ${sub}`);
+        let t = arr.find(x => x.remaining > 0);
+        if (!t) throw new Error(`满额:${sessionKey} ${sub}`);
+        t.remaining--;
+        return t.room;
+    }
+
+    function buildRoomRelationMap(sheet) {
+        roomRelationMap.clear();
+        if (!sheet || sheet.length < 2) return;
+        let header = sheet[0];
+        let idxRoom = -1, idxLocation = -1, idxWaiting = -1, idxDraw = -1, idxPrepare = -1;
+        for (let i = 0; i < header.length; i++) {
+            let c = String(header[i]).trim();
+            if (c.includes("候考")) idxWaiting = i;
+            else if (c.includes("抽题")) idxDraw = i;
+            else if (c.includes("备课")) idxPrepare = i;
+            else if (c.includes("面试室") || c === "面试室号") idxRoom = i;
+            else if (c.includes("位置")) idxLocation = i;
+        }
+        for (let i = 1; i < sheet.length; i++) {
+            let row = sheet[i];
+            if (!row || row.length === 0) continue;
+            let room = row[idxRoom] ? String(row[idxRoom]).trim() : "";
+            if (!room) continue;
+            let cell = function (idx) { return (idx >= 0 && row[idx] != null && String(row[idx]).trim() !== "") ? String(row[idx]).trim() : ""; };
+            roomRelationMap.set(room, {
+                location: cell(idxLocation),
+                waiting: cell(idxWaiting),
+                draw: cell(idxDraw),
+                prepare: cell(idxPrepare)
+            });
+        }
+    }
+
+    async function processExcel(file) {
         return new Promise((resolve, reject) => {
-            const reader = new FileReader();
+            let reader = new FileReader();
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array', defval: "" });
-                let studentSheet = null, subjectSheet = null, scheduleSheet = null, locationSheet = null;
-                for (let name of workbook.SheetNames) {
-                    const n = name.trim();
-                    if (n.includes("考生") || n === "考生") studentSheet = workbook.Sheets[name];
-                    if (n.includes("科目精简") || n === "科目精简") subjectSheet = workbook.Sheets[name];
-                    if (n.includes("学科编排") || n === "学科编排") scheduleSheet = workbook.Sheets[name];
-                    if (n.includes("面试室分布") || n === "面试室分布") locationSheet = workbook.Sheets[name];
+                let wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', defval: "" });
+                let studentSheet = null, subjectSheet = null, scheduleSheet = null, relationSheet = null;
+                for (let name of wb.SheetNames) {
+                    let n = name.trim();
+                    if (n.includes("考生")) studentSheet = wb.Sheets[name];
+                    if (n.includes("科目精简")) subjectSheet = wb.Sheets[name];
+                    if (n.includes("学科编排")) scheduleSheet = wb.Sheets[name];
+                    if (n.includes("面试室分布")) relationSheet = wb.Sheets[name];
                 }
-                if (!studentSheet) reject(new Error("未找到【考生】工作表"));
-                if (!subjectSheet) reject(new Error("未找到【科目精简】工作表"));
-                if (!scheduleSheet) reject(new Error("未找到【学科编排】工作表"));
+                if (!studentSheet || !subjectSheet || !scheduleSheet) reject(new Error("缺少必要工作表"));
                 
-                // 解析面试室分布（可选）
-                buildRoomLocationMap(locationSheet);
-                
-                const studentRaw = XLSX.utils.sheet_to_json(studentSheet, { header: 1, defval: "" });
-                const subjectRaw = XLSX.utils.sheet_to_json(subjectSheet, { header: 1, defval: "" });
-                const scheduleRaw = XLSX.utils.sheet_to_json(scheduleSheet, { header: 1, defval: "" });
-                if (studentRaw.length < 2) reject(new Error("考生表无数据"));
-                
-                const header = studentRaw[0];
-                let colName=-1, colExamId=-1, colIdCard=-1, colSubject=-1, colDate=-1;
-                for (let i=0; i<header.length; i++) {
-                    const cell = String(header[i]).trim();
-                    if (cell.includes("考生姓名") || cell === "姓名") colName = i;
-                    else if (cell.includes("准考证号")) colExamId = i;
-                    else if (cell.includes("证件号") || cell === "身份证号") colIdCard = i;
-                    else if (cell.includes("科目")) colSubject = i;
-                    else if (cell.includes("考试日期")) colDate = i;
+                let studentRaw = XLSX.utils.sheet_to_json(studentSheet, { header: 1, defval: "" });
+                let subjectRaw = XLSX.utils.sheet_to_json(subjectSheet, { header: 1, defval: "" });
+                let scheduleRaw = XLSX.utils.sheet_to_json(scheduleSheet, { header: 1, defval: "" });
+                let relationRaw = relationSheet ? XLSX.utils.sheet_to_json(relationSheet, { header: 1, defval: "" }) : null;
+                buildRoomRelationMap(relationRaw);
+
+                let header = studentRaw[0];
+                let colName = -1, colExam = -1, colId = -1, colSub = -1, colDate = -1;
+                for (let i = 0; i < header.length; i++) {
+                    let c = String(header[i]).trim();
+                    if (c.includes("考生姓名")) colName = i;
+                    else if (c.includes("准考证号")) colExam = i;
+                    else if (c.includes("证件号")) colId = i;
+                    else if (c.includes("科目")) colSub = i;
+                    else if (c.includes("考试日期")) colDate = i;
                 }
-                if (colName===-1||colExamId===-1||colIdCard===-1||colSubject===-1||colDate===-1) {
-                    reject(new Error("考生表必须包含列：考生姓名、准考证号、证件号、科目、考试日期"));
-                }
-                const students = [];
-                for (let i=1; i<studentRaw.length; i++) {
-                    const row = studentRaw[i];
-                    if (!row || row.length===0) continue;
-                    const nameVal = row[colName] ? String(row[colName]).trim() : "";
-                    if (nameVal === "") continue;
+                if (colName === -1 || colExam === -1 || colId === -1 || colSub === -1 || colDate === -1)
+                    reject(new Error("考生表列名不完整"));
+                
+                let students = [];
+                for (let i = 1; i < studentRaw.length; i++) {
+                    let row = studentRaw[i];
+                    if (!row) continue;
+                    let name = row[colName] ? String(row[colName]).trim() : "";
+                    if (!name) continue;
                     students.push({
-                        name: nameVal,
-                        examId: row[colExamId] ? String(row[colExamId]).trim() : "",
-                        idCard: row[colIdCard] ? String(row[colIdCard]).trim() : "",
-                        subjectFull: row[colSubject] ? String(row[colSubject]).trim() : "",
+                        name, examId: row[colExam] ? String(row[colExam]).trim() : "",
+                        idCard: row[colId] ? String(row[colId]).trim() : "",
+                        subjectFull: row[colSub] ? String(row[colSub]).trim() : "",
                         examDateRaw: row[colDate] ? String(row[colDate]).trim() : ""
                     });
                 }
-                if (students.length === 0) reject(new Error("考生表无有效行"));
-                
-                const allDates = [];
-                for (const stu of students) {
-                    const p = parseDateAndSession(stu.examDateRaw);
-                    if (p && !allDates.includes(p.date)) allDates.push(p.date);
-                }
-                allDates.sort();
-                if (allDates.length !== 2) reject(new Error(`考生日期必须为两天，实际检测到 ${allDates.length} 天`));
-                const date1 = allDates[0], date2 = allDates[1];
+                let dates = [];
+                for (let s of students) { let p = parseDateAndSession(s.examDateRaw); if (p && !dates.includes(p.date)) dates.push(p.date); }
+                dates.sort();
+                if (dates.length !== 2) reject(new Error(`考生日期必须为两天`));
+                let d1 = dates[0], d2 = dates[1];
                 buildSubjectMapping(subjectRaw);
-                buildScheduleDynamic(scheduleRaw, date1, date2);
-                const allocated = runAllocation(students, date1, date2);
-                resolve({ allocated, date1, date2 });
+                buildScheduleDynamic(scheduleRaw, d1, d2);
+                
+                for (let k of [`${d1}_AM`, `${d1}_PM`, `${d2}_AM`, `${d2}_PM`]) {
+                    if (scheduleMap[k]) for (let s in scheduleMap[k]) for (let it of scheduleMap[k][s]) it.remaining = it.capacity;
+                }
+                
+                let alloc = [];
+                for (let stu of students) {
+                    let parsed = parseDateAndSession(stu.examDateRaw);
+                    if (!parsed) { alloc.push({ ...stu, interviewRoom: "日期错误" }); continue; }
+                    let { date, session } = parsed;
+                    let sk = null;
+                    if (date === d1 && session === "AM") sk = `${d1}_AM`;
+                    else if (date === d1 && session === "PM") sk = `${d1}_PM`;
+                    else if (date === d2 && session === "AM") sk = `${d2}_AM`;
+                    else if (date === d2 && session === "PM") sk = `${d2}_PM`;
+                    if (!sk) { alloc.push({ ...stu, interviewRoom: "日期不在编排" }); continue; }
+                    let subShort = fullToShortMap.get(stu.subjectFull);
+                    if (!subShort) { alloc.push({ ...stu, interviewRoom: "科目未定义" }); continue; }
+                    try { let room = allocateRoom(sk, subShort); alloc.push({ ...stu, interviewRoom: room }); }
+                    catch(err) { alloc.push({ ...stu, interviewRoom: `失败:${err.message}` }); }
+                }
+                resolve({ allocated: alloc, date1: d1, date2: d2 });
             };
             reader.onerror = err => reject(err);
             reader.readAsArrayBuffer(file);
         });
     }
 
-    function downloadExcel(data, dateOrderList) {
-        if (!data || data.length === 0) { alert("无数据可导出"); return; }
-        const sorted = sortByDateTime(data, dateOrderList);
-        const headers = ["考生姓名", "准考证号", "证件号", "科目", "考试日期", "面试室"];
-        const sheetData = [headers];
-        for (const item of sorted) {
+    function downloadExcel(data) {
+        if (!data || !data.length) { alert("无数据"); return; }
+        let headers = ["考生姓名", "准考证号", "证件号", "科目", "考试日期", "面试室"];
+        let sheetData = [headers];
+        for (let item of data) {
             sheetData.push([
-                deepCleanField(item.name),
-                deepCleanField(item.examId),
-                deepCleanField(item.idCard),
-                deepCleanField(item.subjectFull),
-                deepCleanField(item.examDateRaw),
-                deepCleanField(item.interviewRoom || "未分配")
+                deepClean(item.name), deepClean(item.examId), deepClean(item.idCard),
+                getFullSubjectName(item.subjectFull), deepClean(item.examDateRaw),
+                deepClean(item.interviewRoom || "未分配")
             ]);
         }
-        const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        const range = XLSX.utils.decode_range(ws['!ref']);
+        let ws = XLSX.utils.aoa_to_sheet(sheetData);
+        let range = XLSX.utils.decode_range(ws['!ref']);
         for (let R = range.s.r + 1; R <= range.e.r; R++) {
-            const bAddr = { c: 1, r: R };
-            const bRef = XLSX.utils.encode_cell(bAddr);
+            let bAddr = { c: 1, r: R }, cAddr = { c: 2, r: R };
+            let bRef = XLSX.utils.encode_cell(bAddr), cRef = XLSX.utils.encode_cell(cAddr);
             if (ws[bRef]) ws[bRef].t = 's';
-            const cAddr = { c: 2, r: R };
-            const cRef = XLSX.utils.encode_cell(cAddr);
             if (ws[cRef]) ws[cRef].t = 's';
         }
-        ws['!cols'] = [{wch:12},{wch:18},{wch:22},{wch:18},{wch:18},{wch:10}];
-        const wb = XLSX.utils.book_new();
+        let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "面试室安排");
         XLSX.writeFile(wb, "面试室编排结果.xlsx");
     }
 
-    // 生成单个面试室的签到表HTML (内部样式内联，支持位置显示)
-    function buildSignHtmlForSession(dateStr, sessionType, roomDataMap, locationMap) {
-        const rooms = Array.from(roomDataMap.keys()).sort((a,b)=>parseInt(a)-parseInt(b));
-        const displayDate = dateStr.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2月$3日');
-        const sessionCN = sessionType === 'AM' ? '上午' : '下午';
-        let html = '';
-        for (let room of rooms) {
-            const students = roomDataMap.get(room);
-            const location = locationMap ? locationMap.get(room) : "";
-            const titleWithLocation = location ? `考生签到表（${location}）` : "考生签到表";
-            
-            html += `<div class="sign-table-container" style="page-break-after: always;">`;
-            html += `<div class="sign-header"><h2>${titleWithLocation}</h2>`;
-            html += `<div class="header-info">`;
-            html += `<div class="left-info">面试室：${room} &nbsp;&nbsp; 应考人数：${students.length}</div>`;
-            html += `<div class="right-info">考试时间：${displayDate} ${sessionCN} </div>`;
-            html += `</div></div>`;
-            html += `<table style="width:100%; border-collapse:collapse; font-size:10.5pt; margin-top:10px;">`;
-            html += `<thead>`;
-            html += `<tr>
-                        <th style="width:5%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">序号</th>
-                        <th style="width:14%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">考生姓名</th>
-                        <th style="width:16%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">准考证号</th>
-                        <th style="width:16%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">证件号</th>
-                        <th style="width:25%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">考试科目</th>
-                        <th style="width:9%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">抽签顺序</th>
-                        <th style="width:15%; border:1px solid #000; padding:12px 6px; text-align:center; background:#f5f5f5;">考生签名</th>
-                      </tr>`;
-            html += `</thead><tbody>`;
-            students.forEach((stu, idx) => {
-                html += `<tr>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${idx+1}</td>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.name)}</td>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.examId)}</td>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.idCard)}</td>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;">${deepCleanField(stu.subjectFull)}</td>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;"></td>
-                            <td style="border:1px solid #000; padding:12px 6px; text-align:center;"></td>
-                          </tr>`;
-            });
-            html += `</tbody></table></div>`;
+    function getSessionLabel(date, session) { let md = date.slice(5); return `${md.replace('-', '月')}日${session === 'AM' ? '上午' : '下午'}`; }
+    
+    function getStudentNames(room, dateStr, session) {
+        let names = [];
+        for (let stu of allocatedData) {
+            let p = parseDateAndSession(stu.examDateRaw);
+            if (p && p.date === dateStr && p.session === session && stu.interviewRoom === room && !stu.interviewRoom.includes("失败")) {
+                names.push(deepClean(stu.name));
+            }
         }
+        return names;
+    }
+
+    // 签到表HTML - 优化字号和居中
+    function buildSignSheetHTML(dateStr, session, room, students, headerText) {
+        let displayDate = getSessionLabel(dateStr, session);
+        let rel = roomRelationMap.get(room) || {};
+        let locationText = rel.location ? `（${rel.location}）` : "";
+        let html = `<div class="print-page" style="width:100%; background:white; text-align:center; font-family:'SimSun','宋体',serif;">`;
+        html += `<div style="position:relative; margin-bottom:6px; height:26px;">`;
+        html += `<h2 style="margin:0; text-align:center; line-height:26px; font-size:14pt;">考生签到表${locationText}</h2>`;
+        html += `<div style="position:absolute; right:0; top:0; line-height:26px; font-size:9pt; font-weight:bold;">${headerText || "&nbsp;"}</div>`;
+        html += `</div>`;
+        html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:9pt;">`;
+        html += `<div>考场号：${room} &nbsp;&nbsp; 应考人数：${students.length}</div>`;
+        html += `<div>考试时间：${displayDate}</div>`;
+        html += `</div>`;
+        html += `<table style="width:100%; border-collapse:collapse; margin:0 auto; font-size:8pt; font-family:'SimSun','宋体',serif;">`;
+        html += `<thead>`;
+        html += `<tr>`;
+        html += `<th style="width:5%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">序号</th>`;
+        html += `<th style="width:14%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考生姓名</th>`;
+        html += `<th style="width:16%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">准考证号</th>`;
+        html += `<th style="width:16%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">证件号</th>`;
+        html += `<th style="width:25%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考试科目</th>`;
+        html += `<th style="width:9%;border:1px solid #000; padding:4px; height:26px; font-weight:400; width:50px;">抽签顺序</th>`;
+        html += `<th style="width:15%;border:1px solid #000; padding:4px; height:26px; font-weight:400; width:60px;">考生签名</th>`;
+        html += `</tr>`;
+        html += `</thead><tbody>`;
+        students.forEach((stu, idx) => {
+            html += `<tr>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${idx + 1}<\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.name)}<\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.examId)}<\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.idCard)}<\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${getFullSubjectName(stu.subjectFull)}<\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
+            html += `</tr>`;
+        });
+        // 统一行高：表格固定 14 个序号行，人数不足 14 时补空白行（序号留空）
+        let totalRows = Math.max(14, students.length);
+        for (let i = students.length; i < totalRows; i++) {
+            html += `<tr>`;
+            for (let c = 0; c < 7; c++) {
+                html += `<td style="border:none; padding:4px; height:26px; text-align:center;">&nbsp;<\/td>`;
+            }
+            html += `</tr>`;
+        }
+        html += `</tbody>`;
+        html += `</table></div>`;
         return html;
     }
 
-    // 直接生成全部四个半天所有面试室的完整签到表PDF
-    function printAllSessions() {
-        if (!allocatedData || allocatedData.length === 0 || latestDateOrder.length !== 2) {
+    // 生成单个半天的所有页面HTML（仅面试室签到表）
+    function generateHalfDayPagesHTML(grp, headerText) {
+        let pages = [];
+        let roomsSet = new Set();
+        for (let stu of grp.students) {
+            if (stu.interviewRoom && !stu.interviewRoom.includes("失败")) roomsSet.add(stu.interviewRoom);
+        }
+        let rooms = Array.from(roomsSet).filter(r => /^\d+$/.test(r)).sort((a, b) => parseInt(a) - parseInt(b));
+        for (let room of rooms) {
+            let stuList = grp.students.filter(stu => stu.interviewRoom === room);
+            if (stuList.length) pages.push(buildSignSheetHTML(grp.date, grp.session, room, stuList, headerText));
+        }
+        pages.rooms = rooms;
+        return pages;
+    }
+
+    // ---------- 打印版（矢量文字，A4 横向，一页一个 div） ----------
+    function buildPrintPageHTML(dateStr, session, room, students, headerText) {
+        let displayDate = getSessionLabel(dateStr, session);
+        let rel = roomRelationMap.get(room) || {};
+        let locationText = rel.location ? "（" + rel.location + "）" : "";
+        let h = "";
+        h += '<div class="pp-page">';
+        h += '<div class="pp-header">' + (headerText || "") + '</div>';
+        h += '<div class="pp-body">';
+        h += '<div class="pp-title">考生签到表' + locationText + '</div>';
+        h += '<div class="pp-meta"><span>考场号：' + room + '　　应考人数：' + students.length + '</span><span>考试时间：' + displayDate + '</span></div>';
+        h += '<table class="pp-table"><thead><tr>';
+        h += '<th style="width:5%">序号</th><th style="width:14%">考生姓名</th><th style="width:16%">准考证号</th>';
+        h += '<th style="width:16%">证件号</th><th style="width:25%">考试科目</th><th style="width:9%">抽签顺序</th><th style="width:15%">考生签名</th>';
+        h += '</tr></thead><tbody>';
+        students.forEach(function (stu, idx) {
+            h += '<tr><td>' + (idx + 1) + '</td>';
+            h += '<td>' + deepClean(stu.name) + '</td>';
+            h += '<td>' + deepClean(stu.examId) + '</td>';
+            h += '<td>' + deepClean(stu.idCard) + '</td>';
+            h += '<td>' + getFullSubjectName(stu.subjectFull) + '</td>';
+            h += '<td></td><td></td></tr>';
+        });
+        for (let i = students.length; i < Math.max(14, students.length); i++) {
+            h += '<tr><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td></tr>';
+        }
+        h += '</tbody></table></div></div>';
+        return h;
+    }
+
+    // 生成全部组、全部半天的打印页面 HTML
+    function buildAllPrintPagesHTML() {
+        let [date1, date2] = latestDateOrder;
+        let halfDays = [
+            { key: "am1", date: date1, session: "AM" },
+            { key: "pm1", date: date1, session: "PM" },
+            { key: "am2", date: date2, session: "AM" },
+            { key: "pm2", date: date2, session: "PM" }
+        ];
+        let halfGroups = {};
+        for (let hd of halfDays) halfGroups[hd.key] = { date: hd.date, session: hd.session, students: [] };
+        for (let stu of allocatedData) {
+            let p = parseDateAndSession(stu.examDateRaw);
+            if (!p) continue;
+            let key = null;
+            if (p.date === date1 && p.session === "AM") key = "am1";
+            else if (p.date === date1 && p.session === "PM") key = "pm1";
+            else if (p.date === date2 && p.session === "AM") key = "am2";
+            else if (p.date === date2 && p.session === "PM") key = "pm2";
+            if (key && stu.interviewRoom && !stu.interviewRoom.includes("失败")) halfGroups[key].students.push(stu);
+        }
+
+        let groups = headerValues.length ? headerValues.slice() : [""];
+        let html = "";
+        let count = 0;
+        for (let gi = 0; gi < groups.length; gi++) {
+            let g = groups[gi];
+            for (let hd of halfDays) {
+                let grp = halfGroups[hd.key];
+                if (grp.students.length === 0) continue;
+                let roomsSet = new Set();
+                for (let stu of grp.students) {
+                    if (stu.interviewRoom && !stu.interviewRoom.includes("失败")) roomsSet.add(stu.interviewRoom);
+                }
+                let rooms = Array.from(roomsSet).filter(function (r) { return /^\d+$/.test(r); })
+                    .sort(function (a, b) { return parseInt(a) - parseInt(b); });
+                for (let room of rooms) {
+                    let stuList = grp.students.filter(function (s) { return s.interviewRoom === room; });
+                    if (!stuList.length) continue;
+                    html += buildPrintPageHTML(grp.date, grp.session, room, stuList, headerTextFor(g, room));
+                    count++;
+                }
+            }
+        }
+        return { html: html, count: count };
+    }
+
+    function printVectorPDF() {
+        if (isGenerating) return;
+        if (!allocatedData.length || latestDateOrder.length !== 2) {
             alert("请先上传并编排数据");
             return;
         }
-        const [date1, date2] = latestDateOrder;
-        
-        // 按半天分组考生
-        const sessionGroups = {
-            am1: { date: date1, session: "AM", students: [] },
-            pm1: { date: date1, session: "PM", students: [] },
-            am2: { date: date2, session: "AM", students: [] },
-            pm2: { date: date2, session: "PM", students: [] }
-        };
-        
-        for (let stu of allocatedData) {
-            const parsed = parseDateAndSession(stu.examDateRaw);
-            if (!parsed) continue;
-            const { date, session } = parsed;
-            let groupKey = null;
-            if (date === date1 && session === "AM") groupKey = "am1";
-            else if (date === date1 && session === "PM") groupKey = "pm1";
-            else if (date === date2 && session === "AM") groupKey = "am2";
-            else if (date === date2 && session === "PM") groupKey = "pm2";
-            if (groupKey && stu.interviewRoom && !stu.interviewRoom.includes("失败") && !stu.interviewRoom.includes("日期错误")) {
-                sessionGroups[groupKey].students.push(stu);
+        isGenerating = true;
+        showLoading("正在排版打印页面，请稍候...");
+        setTimeout(function () {
+            try {
+                let res = buildAllPrintPagesHTML();
+                if (!res.count) {
+                    hideLoading(); isGenerating = false;
+                    appendLog("⚠️ 没有任何页面可生成", true);
+                    return;
+                }
+                let root = document.getElementById("printRoot");
+                root.innerHTML = res.html;
+                appendLog("🖨️ 已排好 " + res.count + " 页，请在打印对话框里选择「另存为 PDF」；边距选「无」、取消「页眉和页脚」、缩放 100%");
+                hideLoading();
+                isGenerating = false;
+                setTimeout(function () { window.print(); }, 400);
+            } catch (e) {
+                hideLoading(); isGenerating = false;
+                appendLog("❌ 打印排版失败：" + e.message, true);
+                alert("打印排版失败：" + e.message);
             }
-        }
-        
-        let fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>考生签到表（全部考场）</title>`;
-        fullHtml += `<style>
-            @page { size: A4 landscape; margin: 1.2cm 1cm; }
-            body { margin: 0; padding: 0; font-family: 'SimHei', 'Microsoft YaHei', sans-serif; background: white; }
-            .sign-table-container { page-break-after: always; margin: 0; }
-            .sign-header { text-align: center; margin-bottom: 15px; }
-            .sign-header h2 { margin: 0 0 8px 0; font-size: 18pt; }
-            .header-info { display: flex; justify-content: space-between; align-items: baseline; font-size: 12pt; margin-top: 6px; }
-            .left-info { text-align: left; }
-            .right-info { text-align: right; }
-        </style></head><body>`;
-        
-        // 按顺序输出四个半天：第一天上午、第一天下午、第二天上午、第二天下午
-        const order = ["am1", "pm1", "am2", "pm2"];
-        for (let key of order) {
-            const group = sessionGroups[key];
-            if (!group || group.students.length === 0) continue;
-            // 按面试室分组
-            const roomMap = new Map();
-            for (let stu of group.students) {
-                const room = stu.interviewRoom;
-                if (!roomMap.has(room)) roomMap.set(room, []);
-                roomMap.get(room).push(stu);
-            }
-            fullHtml += buildSignHtmlForSession(group.date, group.session, roomMap, roomLocationMap);
-        }
-        fullHtml += `</body></html>`;
-        
-        const printWindow = window.open();
-        printWindow.document.write(fullHtml);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        }, 60);
     }
 
-    // UI 元素
-    const fileInput = document.getElementById("fileInput");
-    const uploadZone = document.getElementById("uploadZone");
-    const statusText = document.getElementById("statusText");
-    const statsInfo = document.getElementById("statsInfo");
-    const logContainer = document.getElementById("logContainer");
-    const logContent = document.getElementById("logContent");
-    const resultActions = document.getElementById("resultActions");
-    const statusPanel = document.getElementById("statusPanel");
-    const downloadExcelBtn = document.getElementById("downloadExcelBtn");
-    const printSignBtn = document.getElementById("printSignBtn");
-    
-    function appendLog(msg, isError = false) {
-        const div = document.createElement("div");
-        div.textContent = msg;
-        div.style.color = isError ? "#ffbba0" : "#c0e0ff";
-        div.style.marginBottom = "5px";
-        logContent.appendChild(div);
+    // 把一页 HTML 渲染成图片（不直接写入 PDF），返回图片数据与画布尺寸
+    async function renderPageToImage(pageHtml) {
+        let container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '750px';
+        container.style.backgroundColor = 'white';
+        container.style.padding = '10px';
+        container.innerHTML = pageHtml;
+        document.body.appendChild(container);
+        try {
+            let canvas = await html2canvas(container, {
+                scale: 3.0,
+                useCORS: false,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            // 转灰度再压缩：黑白表格体积明显变小，清晰度基本无损（失败则回退彩色）
+            let imgData = null;
+            try {
+                let grayCanvas = document.createElement('canvas');
+                grayCanvas.width = canvas.width;
+                grayCanvas.height = canvas.height;
+                let gctx = grayCanvas.getContext('2d');
+                if (gctx) {
+                    gctx.filter = 'grayscale(1)';
+                    gctx.drawImage(canvas, 0, 0);
+                    imgData = grayCanvas.toDataURL('image/jpeg', 0.92);
+                }
+            } catch (grayErr) {
+                console.warn('灰度转换失败，回退彩色压缩', grayErr);
+            }
+            if (!imgData) imgData = canvas.toDataURL('image/jpeg', 0.92);
+            return { data: imgData, cw: canvas.width, ch: canvas.height };
+        } catch (err) {
+            console.error('渲染失败:', err);
+            appendLog("⚠️ 有一页渲染失败，已跳过该页", true);
+            return null;
+        } finally {
+            document.body.removeChild(container);
+        }
+    }
+
+    // 页面在 A4 上的落位：宽度 267mm、左右各 15mm 居中、上边距 5mm、下边距固定 20mm（2cm）
+    function pageGeometry(cw, ch) {
+        let imgH = (ch * 277) / cw;
+        let drawW = 267;
+        let maxH = 185;
+        if (imgH > maxH) {
+            let k = maxH / imgH;
+            drawW = drawW * k;
+            imgH = maxH;
+        }
+        let drawX = (297 - drawW) / 2;
+        let drawY = 190 - imgH;
+        if (drawY < 5) drawY = 5;
+        return { x: drawX, y: drawY, w: drawW, h: imgH, mmPerPx: drawW / 770 };
+    }
+
+    // 按组名判断该取哪一列的室号：候考/抽题/备课取分布表对应列，面试室取考场号本身
+    function roomCodeForGroup(groupName, room) {
+        let rel = roomRelationMap.get(room) || {};
+        let g = String(groupName || "");
+        if (g.includes("候考")) return rel.waiting || "";
+        if (g.includes("抽题")) return rel.draw || "";
+        if (g.includes("备课")) return rel.prepare || "";
+        if (g.includes("面试")) return "";   // 面试室不加号（考场号已在副标题里）
+        return "";
+    }
+
+    // 页眉文字 = 组名 + 空格 + 该考场对应室号（如“候考室 3”）
+    function headerTextFor(groupName, room) {
+        let g = String(groupName || "");
+        let code = roomCodeForGroup(g, room);
+        if (!g) return code;
+        return code ? (g + " " + code) : g;
+    }
+
+    // 页眉文字单独做成小图（jsPDF 不带中文字体，用图片叠加到右上角）
+    function buildHeaderImage(text) {
+        if (!text) return null;
+        let fontPx = 12;
+        let probe = document.createElement("canvas").getContext("2d");
+        if (!probe || !probe.measureText) return null;
+        probe.font = "bold " + fontPx + "px 'SimSun','宋体',serif";
+        let tw = Math.ceil(probe.measureText(text).width) + 6;
+        let th = 20;
+        let c = document.createElement("canvas");
+        c.width = tw * 4;
+        c.height = th * 4;
+        let ctx = c.getContext("2d");
+        if (!ctx) return null;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.scale(4, 4);
+        ctx.font = "bold " + fontPx + "px 'SimSun','宋体',serif";
+        ctx.fillStyle = "#000000";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "right";
+        ctx.fillText(text, tw - 2, 10);
+        return { data: c.toDataURL("image/png"), wPx: tw, hPx: th };
+    }
+
+    async function generateAllHalfDayPDFs() {
+        if (isGenerating) {
+            appendLog("⚠️ 正在生成中，请勿重复点击");
+            return;
+        }
+        if (!allocatedData.length || latestDateOrder.length !== 2) {
+            alert("请先上传并编排数据");
+            return;
+        }
+        isGenerating = true;
+        showLoading("正在生成PDF，请稍候...");
+        
+        try {
+            let [date1, date2] = latestDateOrder;
+            let halfDays = [
+                { key: "am1", date: date1, session: "AM", name: `${date1.slice(5)}_上午` },
+                { key: "pm1", date: date1, session: "PM", name: `${date1.slice(5)}_下午` },
+                { key: "am2", date: date2, session: "AM", name: `${date2.slice(5)}_上午` },
+                { key: "pm2", date: date2, session: "PM", name: `${date2.slice(5)}_下午` }
+            ];
+            
+            let halfGroups = {};
+            for (let hd of halfDays) {
+                halfGroups[hd.key] = { date: hd.date, session: hd.session, students: [], name: hd.name };
+            }
+            for (let stu of allocatedData) {
+                let p = parseDateAndSession(stu.examDateRaw);
+                if (!p) continue;
+                let key = null;
+                if (p.date === date1 && p.session === "AM") key = "am1";
+                else if (p.date === date1 && p.session === "PM") key = "pm1";
+                else if (p.date === date2 && p.session === "AM") key = "am2";
+                else if (p.date === date2 && p.session === "PM") key = "pm2";
+                if (key && stu.interviewRoom && !stu.interviewRoom.includes("失败")) {
+                    halfGroups[key].students.push(stu);
+                }
+            }
+            
+            let groups = headerValues.length ? headerValues.slice() : [""];
+
+            // 1) 先渲染一套页面（页眉留空），四组共用同一批图片，PDF 里只存一份
+            let pageSet = [];
+            let done = 0;
+            let totalPages = pagesOfAllHalves();
+            for (let hd of halfDays) {
+                let grp = halfGroups[hd.key];
+                if (grp.students.length === 0) { appendLog(`⚠️ ${hd.name} 无考生数据，跳过`); continue; }
+                let pages = generateHalfDayPagesHTML(grp, "");
+                for (let pi = 0; pi < pages.length; pi++) {
+                    updateLoadingText(`正在渲染模板 ${done + 1} / ${totalPages} 页...`);
+                    let img = await renderPageToImage(pages[pi]);
+                    if (img) { img.room = pages.rooms[pi]; pageSet.push(img); }
+                    done++;
+                }
+            }
+            if (!pageSet.length) {
+                appendLog("⚠️ 没有任何页面可生成", true);
+                return;
+            }
+            appendLog(`🖼️ 模板渲染完成：${pageSet.length} 页，四组共用`);
+
+            // 2) 页眉图按文字缓存（同室号复用同一张，不会重复占体积）
+            let headerCache = new Map();
+            let headerIdx = 0;
+
+            // 3) 组装 PDF：同一张表格图只嵌入一次，页眉单独叠加
+            const { jsPDF } = window.jspdf;
+            let pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            let pageIndex = 0;
+            for (let gi = 0; gi < groups.length; gi++) {
+                let g = groups[gi];
+                appendLog(`📚 第 ${gi + 1}/${groups.length} 组 ${g ? "「" + g + "」" : "（空白页眉）"} 排版中...`);
+                for (let pi = 0; pi < pageSet.length; pi++) {
+                    let img = pageSet[pi];
+                    let geo = pageGeometry(img.cw, img.ch);
+                    if (pageIndex > 0) pdf.addPage();
+                    pdf.addImage(img.data, 'JPEG', geo.x, geo.y, geo.w, geo.h, 'pg' + (pi + 1), 'FAST');
+                    let hText = headerTextFor(g, img.room);
+                    let hi = null;
+                    if (hText) {
+                        if (headerCache.has(hText)) {
+                            hi = headerCache.get(hText);
+                        } else {
+                            let built = buildHeaderImage(hText);
+                            if (built) { built.alias = "hdr" + headerIdx; headerIdx++; }
+                            headerCache.set(hText, built);
+                            hi = built;
+                        }
+                    }
+                    if (hi) {
+                        let hw = hi.wPx * geo.mmPerPx;
+                        let hh = hi.hPx * geo.mmPerPx;
+                        let hx = 297 - 15 - hw;   // 距纸张右边 1.5cm
+                        let hy = 15;              // 距纸张顶部 1.5cm
+                        pdf.addImage(hi.data, 'PNG', hx, hy, hw, hh, hi.alias, 'FAST');
+                    }
+                    pageIndex++;
+                    updateLoadingText(`正在排版 第 ${gi + 1}/${groups.length} 组 · ${pi + 1}/${pageSet.length} 页`);
+                }
+            }
+            if (pageIndex === 0) {
+                appendLog("⚠️ 没有任何页面可生成", true);
+                return;
+            }
+            let fname = groups.length > 1 ? `签到表_四个半天_${groups.length}组.pdf` : "签到表_四个半天.pdf";
+            downloadBlob(pdf.output('blob'), fname);
+            appendLog(`✅ 已合并生成 1 个 PDF（${groups.length} 组），共 ${pageIndex} 页（图片复用）`);
+        } catch (err) {
+            console.error(err);
+            appendLog(`❌ 生成失败: ${err.message}`, true);
+            alert("生成PDF失败：" + err.message);
+        } finally {
+            isGenerating = false;
+            hideLoading();
+        }
+    }
+
+    // ---------- 页眉分组 ----------
+    function pagesOfAllHalves() {
+        if (!allocatedData.length || latestDateOrder.length !== 2) return 0;
+        let total = 0;
+        for (let date of latestDateOrder) {
+            for (let session of ["AM", "PM"]) {
+                let rooms = new Set();
+                for (let stu of allocatedData) {
+                    let p = parseDateAndSession(stu.examDateRaw);
+                    if (p && p.date === date && p.session === session && stu.interviewRoom &&
+                        !stu.interviewRoom.includes("失败") && /^\d+$/.test(stu.interviewRoom)) {
+                        rooms.add(stu.interviewRoom);
+                    }
+                }
+                total += rooms.size;
+            }
+        }
+        return total;
+    }
+
+    function updatePageEstimate() {
+        let per = pagesOfAllHalves();
+        let perEl = document.getElementById("pagesPerGroup");
+        let totEl = document.getElementById("totalPages");
+        if (perEl) perEl.textContent = per || "—";
+        if (totEl) totEl.textContent = per ? per * headerValues.length : "—";
+        let btn = document.getElementById("printAllBtn");
+        if (btn) btn.textContent = `🖨️ 打印 / 导出 PDF`;
+    }
+
+    function renderHeaderRows() {
+        let box = document.getElementById("headerRows");
+        if (!box) return;
+        box.innerHTML = "";
+        headerValues.forEach(function (v, i) {
+            let wrap = document.createElement("div");
+            wrap.style.cssText = "display:flex; align-items:center; gap:6px;";
+            let label = document.createElement("span");
+            label.style.cssText = "font-size:0.82rem; color:#4a627a;";
+            label.textContent = "第" + (i + 1) + "组";
+            let inp = document.createElement("input");
+            inp.type = "text";
+            inp.value = v;
+            inp.placeholder = "如：面试室";
+            inp.style.cssText = "width:110px; padding:6px 10px; border:1px solid #cde4f2; border-radius:10px; font-size:0.85rem; outline:none;";
+            inp.addEventListener("input", function () { headerValues[i] = inp.value.trim(); updatePageEstimate(); });
+            let del = document.createElement("button");
+            del.type = "button";
+            del.textContent = "✕";
+            del.title = "删除该组";
+            del.style.cssText = "border:none; background:transparent; color:#9bb6cc; cursor:pointer; font-size:0.8rem;";
+            del.addEventListener("click", function () {
+                if (headerValues.length <= 1) return;
+                headerValues.splice(i, 1);
+                renderHeaderRows();
+                updatePageEstimate();
+            });
+            wrap.appendChild(label);
+            wrap.appendChild(inp);
+            wrap.appendChild(del);
+            box.appendChild(wrap);
+        });
+    }
+
+    function downloadBlob(blob, filename) {
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    function showLoading(text) {
+        let overlay = document.getElementById('loadingOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `<div class="loading-spinner"></div><div id="loadingText">${text}</div>`;
+            document.body.appendChild(overlay);
+        } else {
+            overlay.style.display = 'flex';
+            document.getElementById('loadingText').innerText = text;
+        }
+    }
+    function hideLoading() {
+        let overlay = document.getElementById('loadingOverlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+    function updateLoadingText(text) {
+        let textEl = document.getElementById('loadingText');
+        if (textEl) textEl.innerText = text;
+    }
+
+    // UI交互
+    const fileInput = document.getElementById("fileInput"), uploadZone = document.getElementById("uploadZone");
+    const statusText = document.getElementById("statusText"), statsInfo = document.getElementById("statsInfo");
+    const logContainer = document.getElementById("logContainer"), logContent = document.getElementById("logContent");
+    const resultActions = document.getElementById("resultActions"), statusPanel = document.getElementById("statusPanel");
+    const downloadExcelBtn = document.getElementById("downloadExcelBtn"), printAllBtn = document.getElementById("printAllBtn");
+
+    function appendLog(msg, err = false) {
+        let d = document.createElement("div");
+        d.textContent = msg;
+        d.style.color = err ? "#ffbba0" : "#c0e0ff";
+        logContent.appendChild(d);
         logContent.scrollTop = logContent.scrollHeight;
     }
-    
+
     uploadZone.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", async (e) => {
-        const file = e.target.files[0];
+        let file = e.target.files[0];
         if (!file) return;
-        if (!file.name.match(/\.xlsx?$/i)) { alert("请上传 .xls 或 .xlsx 文件"); return; }
         logContainer.style.display = "block";
         resultActions.style.display = "none";
         logContent.innerHTML = "";
-        appendLog(`📁 读取文件: ${file.name}`);
+        appendLog(`📁 读取: ${file.name}`);
         statusPanel.style.display = "flex";
         statusText.innerText = "解析编排中...";
-        statsInfo.innerText = "⏳ 处理中";
+        statsInfo.innerText = "⏳";
         try {
-            const { allocated, date1, date2 } = await processExcelFile(file);
+            let { allocated, date1, date2 } = await processExcel(file);
             allocatedData = allocated;
             latestDateOrder = [date1, date2];
-            const succ = allocated.filter(r => !r.interviewRoom?.startsWith("失败") && r.interviewRoom !== "日期错误" && r.interviewRoom !== "科目未定义" && r.interviewRoom !== "日期不在编排范围").length;
-            appendLog(`✅ 编排完成！共 ${allocated.length} 人，成功分配 ${succ} 人，异常 ${allocated.length-succ} 人。`);
+            let succ = allocated.filter(r => !r.interviewRoom?.startsWith("失败")).length;
+            appendLog(`✅ 编排完成！共 ${allocated.length} 人，成功分配 ${succ} 人。`);
             appendLog(`📅 识别日期: ${date1} / ${date2}`);
-            if (roomLocationMap.size > 0) {
-                appendLog(`📍 已加载 ${roomLocationMap.size} 个面试室位置信息`);
-            } else {
-                appendLog(`⚠️ 未找到【面试室分布】工作表或数据为空，签到表标题将不显示位置`);
-            }
             statusText.innerText = `完成 (${succ}/${allocated.length})`;
-            statsInfo.innerText = `总考生 ${allocated.length} | 已分配 ${succ}`;
+            statsInfo.innerText = `总${allocated.length}|已分配${succ}`;
             resultActions.style.display = "block";
-            const sample = allocated.find(r => r.subjectFull === "141-幼儿园");
-            if (sample) appendLog(`🍎 幼儿园样例: ${sample.name} → ${sample.examDateRaw} 面试室 ${sample.interviewRoom}`);
-            appendLog("💡 点击「生成签到表PDF」将直接输出全部四个半天所有面试室的签到表（A4横向），标题会显示位置信息。");
+            if (roomRelationMap.size) appendLog(`📍 已加载 ${roomRelationMap.size} 个面试室关联信息`);
+            updatePageEstimate();
         } catch (err) {
-            appendLog(`❌ 错误: ${err.message}`, true);
-            statusText.innerText = "处理失败";
-            statsInfo.innerText = "请检查文件";
+            appendLog(`❌ ${err.message}`, true);
             alert("解析失败：" + err.message);
         } finally {
             fileInput.value = "";
         }
     });
     downloadExcelBtn.addEventListener("click", () => {
-        if (allocatedData && allocatedData.length && latestDateOrder.length === 2) {
-            downloadExcel(allocatedData, latestDateOrder);
-        } else alert("没有编排结果，请先上传文件");
+        if (allocatedData.length) downloadExcel(allocatedData);
+        else alert("没有编排结果，请先上传文件");
     });
-    printSignBtn.addEventListener("click", printAllSessions);
-    uploadZone.addEventListener("dragover", (e) => { e.preventDefault(); uploadZone.style.background = "#ffffff"; });
-    uploadZone.addEventListener("dragleave", () => { uploadZone.style.background = "#fafdff"; });
-    uploadZone.addEventListener("drop", (e) => {
-        e.preventDefault();
-        uploadZone.style.background = "#fafdff";
-        const files = e.dataTransfer.files;
-        if (files.length) { fileInput.files = files; fileInput.dispatchEvent(new Event('change')); }
+    printAllBtn.addEventListener("click", printVectorPDF);
+    window.addEventListener("afterprint", function () {
+        let root = document.getElementById("printRoot");
+        if (root) root.innerHTML = "";
+        appendLog("ℹ️ 打印视图已释放，如未生成 PDF 可再次点击按钮");
     });
+    let addHeaderGroupBtn = document.getElementById("addHeaderGroupBtn");
+    if (addHeaderGroupBtn) addHeaderGroupBtn.addEventListener("click", function () {
+        headerValues.push("");
+        renderHeaderRows();
+        updatePageEstimate();
+    });
+    renderHeaderRows();
+    uploadZone.addEventListener("dragover", e => e.preventDefault());
+    uploadZone.addEventListener("drop", e => { e.preventDefault(); let f = e.dataTransfer.files; if (f.length) { fileInput.files = f; fileInput.dispatchEvent(new Event('change')); } });
 </script>
 </body>
 </html>
