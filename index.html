@@ -79,7 +79,7 @@
         <div id="resultActions" style="display: none;">
             <div class="button-group">
                 <button class="btn btn-excel" id="downloadExcelBtn">📎 下载 Excel 编排结果</button>
-                <button class="btn btn-excel" id="waitingSummaryBtn">📊 候考室科目汇总（xls）</button>
+                <button class="btn btn-excel" id="waitingSummaryBtn">📊 候考室科目汇总（xlsx）</button>
                 <button class="btn" id="printAllBtn">🖨️ 打印 / 导出 PDF（矢量）</button>
             </div>
             <div id="headerPanel" style="background:#f4f9ff; border-radius:28px; padding:16px 20px; margin-top:18px;">
@@ -434,8 +434,7 @@
             if (!map.has(p.subject)) map.set(p.subject, { subject: p.subject, stages: {} });
             if (p.stage) map.get(p.subject).stages[p.stage] = true;
         });
-        let arr = Array.from(map.values());
-        arr.sort(function (a, b) { return a.subject.localeCompare(b.subject, "zh-Hans-CN"); });
+        let arr = Array.from(map.values());   // 保持传入先后：考场号靠前的学科排前面
         return arr.map(function (it) {
             let stages = Object.keys(it.stages).sort(function (a, b) {
                 let oa = STAGE_ORDER[a] != null ? STAGE_ORDER[a] : 9;
@@ -446,6 +445,186 @@
             if (stages.length === 1 && stages[0] === "幼儿园") return it.subject;
             return it.subject + "（" + stages.join("、") + "）";
         });
+    }
+
+    // ---------- 极简 xlsx 生成器（只为支持“单元格内自动换行”样式；SheetJS 社区版写不了样式） ----------
+    const CRC_TABLE = (function () {
+        const t = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+            let c = n;
+            for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            t[n] = c >>> 0;
+        }
+        return t;
+    })();
+
+    function crc32(bytes) {
+        let c = 0xFFFFFFFF;
+        for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+        return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function zipStore(entries) {
+        const enc = new TextEncoder();
+        const parts = [], central = [];
+        let offset = 0;
+        entries.forEach(function (e) {
+            const nameBytes = enc.encode(e.name);
+            const data = e.data;
+            const crc = crc32(data);
+            const size = data.length;
+            const lh = new Uint8Array(30 + nameBytes.length);
+            const dv = new DataView(lh.buffer);
+            dv.setUint32(0, 0x04034b50, true);
+            dv.setUint16(4, 20, true);
+            dv.setUint16(6, 0, true);
+            dv.setUint16(8, 0, true);
+            dv.setUint16(10, 0, true);
+            dv.setUint16(12, 0x21, true);
+            dv.setUint32(14, crc, true);
+            dv.setUint32(18, size, true);
+            dv.setUint32(22, size, true);
+            dv.setUint16(26, nameBytes.length, true);
+            dv.setUint16(28, 0, true);
+            lh.set(nameBytes, 30);
+            parts.push(lh, data);
+
+            const ch = new Uint8Array(46 + nameBytes.length);
+            const dv2 = new DataView(ch.buffer);
+            dv2.setUint32(0, 0x02014b50, true);
+            dv2.setUint16(4, 20, true);
+            dv2.setUint16(6, 20, true);
+            dv2.setUint16(8, 0, true);
+            dv2.setUint16(10, 0, true);
+            dv2.setUint16(12, 0, true);
+            dv2.setUint16(14, 0x21, true);
+            dv2.setUint32(16, crc, true);
+            dv2.setUint32(20, size, true);
+            dv2.setUint32(24, size, true);
+            dv2.setUint16(28, nameBytes.length, true);
+            dv2.setUint16(30, 0, true);
+            dv2.setUint16(32, 0, true);
+            dv2.setUint16(34, 0, true);
+            dv2.setUint16(36, 0, true);
+            dv2.setUint32(38, 0, true);
+            dv2.setUint32(42, offset, true);
+            ch.set(nameBytes, 46);
+            central.push(ch);
+            offset += lh.length + size;
+        });
+        let cdSize = 0;
+        let total = 0;
+        parts.forEach(function (p) { total += p.length; });
+        central.forEach(function (c) { cdSize += c.length; });
+        total += cdSize + 22;
+        const eocd = new Uint8Array(22);
+        const dv3 = new DataView(eocd.buffer);
+        dv3.setUint32(0, 0x06054b50, true);
+        dv3.setUint16(8, entries.length, true);
+        dv3.setUint16(10, entries.length, true);
+        dv3.setUint32(12, cdSize, true);
+        dv3.setUint32(16, offset, true);
+        const out = new Uint8Array(total);
+        let pos = 0;
+        parts.forEach(function (p) { out.set(p, pos); pos += p.length; });
+        central.forEach(function (c) { out.set(c, pos); pos += c.length; });
+        out.set(eocd, pos);
+        return out;
+    }
+
+    function xColLetter(i) { return String.fromCharCode(65 + i); }
+    function xmlEsc(s) {
+        return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function xCell(ref, text, style) {
+        return '<c r="' + ref + '" s="' + style + '" t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(text) + "</t></is></c>";
+    }
+
+    function buildWaitSummaryXlsx(data, waitingList) {
+        const colCnt = waitingList.length;
+        const rows = [], merges = [];
+        let r = 0;
+        data.forEach(function (d, di) {
+            if (di > 0) r += 1;
+            r += 1;
+            let tCells = [];
+            for (let c = 0; c < colCnt; c++) tCells.push(xCell(xColLetter(c) + r, c === 0 ? d.label : "", 2));
+            merges.push("A" + r + ":" + xColLetter(colCnt - 1) + r);
+            rows.push('<row r="' + r + '" ht="24" customHeight="1">' + tCells.join("") + "</row>");
+
+            r += 1;
+            let hCells = [];
+            d.cols.forEach(function (c, i) { hCells.push(xCell(xColLetter(i) + r, "候考室 " + c.waiting, 3)); });
+            rows.push('<row r="' + r + '" ht="22" customHeight="1">' + hCells.join("") + "</row>");
+
+            r += 1;
+            let maxLabels = 0;
+            d.cols.forEach(function (c) { if (c.labels.length > maxLabels) maxLabels = c.labels.length; });
+            let iCells = [];
+            d.cols.forEach(function (c, i) { iCells.push(xCell(xColLetter(i) + r, c.labels.join("\n"), 1)); });
+            rows.push('<row r="' + r + '" ht="' + (maxLabels * 15 + 10) + '" customHeight="1">' + iCells.join("") + "</row>");
+        });
+
+        const sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+            '<cols><col min="1" max="' + colCnt + '" width="34" customWidth="1"/></cols>' +
+            "<sheetData>" + rows.join("") + "</sheetData>" +
+            (merges.length ? '<mergeCells count="' + merges.length + '">' +
+                merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join("") + "</mergeCells>" : "") +
+            "</worksheet>";
+
+        const stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+            '<fonts count="2">' +
+            '<font><sz val="11"/><color theme="1"/><name val="宋体"/><family val="2"/><charset val="134"/></font>' +
+            '<font><b/><sz val="11"/><color theme="1"/><name val="宋体"/><family val="2"/><charset val="134"/></font>' +
+            "</fonts>" +
+            '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+            '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+            '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+            '<cellXfs count="4">' +
+            '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+            '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>' +
+            '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+            '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+            "</cellXfs>" +
+            '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+            "</styleSheet>";
+
+        const workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+            '<sheets><sheet name="候考室科目汇总" sheetId="1" r:id="rId1"/></sheets></workbook>';
+
+        const wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+            "</Relationships>";
+
+        const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+            "</Relationships>";
+
+        const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+            '<Default Extension="xml" ContentType="application/xml"/>' +
+            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+            '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+            "</Types>";
+
+        const enc = new TextEncoder();
+        return zipStore([
+            { name: "[Content_Types].xml", data: enc.encode(contentTypes) },
+            { name: "_rels/.rels", data: enc.encode(rootRels) },
+            { name: "xl/workbook.xml", data: enc.encode(workbookXml) },
+            { name: "xl/_rels/workbook.xml.rels", data: enc.encode(wbRels) },
+            { name: "xl/worksheets/sheet1.xml", data: enc.encode(sheetXml) },
+            { name: "xl/styles.xml", data: enc.encode(stylesXml) }
+        ]);
     }
 
     function buildWaitingSubjectData() {
@@ -465,6 +644,8 @@
             let cols = waitingList.map(function (w) { return { waiting: w, raw: [], seen: {} }; });
             let byWaiting = {};
             cols.forEach(function (c, i) { byWaiting[c.waiting] = i; });
+            // 按考场号升序收集（同考场内保持原顺序），考场号靠前的学科自然排在前面
+            let rows = [];
             for (let stu of allocatedData) {
                 let p = parseDateAndSession(stu.examDateRaw);
                 if (!p || p.date !== h.date || p.session !== h.session) continue;
@@ -475,12 +656,16 @@
                 if (ci == null) continue;
                 let parts = parseSubjectParts(stu.subjectFull);
                 if (!parts.subject) continue;
-                let key = parts.subject + "|" + parts.stage;
-                if (cols[ci].seen[key]) continue;
-                cols[ci].seen[key] = true;
-                cols[ci].raw.push(parts);
+                rows.push({ room: parseInt(stu.interviewRoom, 10), idx: rows.length, ci: ci, parts: parts });
             }
-            cols.forEach(function (c) { c.raw.sort(cmpSubject); c.labels = groupSubjectLabels(c.raw); });
+            rows.sort(function (a, b) { return (a.room - b.room) || (a.idx - b.idx); });
+            for (let it of rows) {
+                let key = it.parts.subject + "|" + it.parts.stage;
+                if (cols[it.ci].seen[key]) continue;
+                cols[it.ci].seen[key] = true;
+                cols[it.ci].raw.push(it.parts);
+            }
+            cols.forEach(function (c) { c.labels = groupSubjectLabels(c.raw); });
             result.push({ label: getSessionLabel(h.date, h.session), cols: cols });
         }
         return { ok: true, data: result, waitingList: waitingList };
@@ -489,32 +674,19 @@
     function exportWaitingSubjectXls() {
         let res = buildWaitingSubjectData();
         if (!res.ok) { alert(res.msg); return; }
-        let wb = XLSX.utils.book_new();
-        let aoa = [], merges = [];
-        res.data.forEach(function (d, di) {
-            if (di > 0) aoa.push([]);                       // 半天之间空一行
-            let titleRow = aoa.length;
-            let title = [d.label];
-            for (let i = 1; i < d.cols.length; i++) title.push("");
-            aoa.push(title);
-            merges.push({ s: { r: titleRow, c: 0 }, e: { r: titleRow, c: d.cols.length - 1 } });
-            aoa.push(d.cols.map(function (c) { return "候考室 " + c.waiting; }));
-            let max = 0;
-            d.cols.forEach(function (c) { if (c.labels.length > max) max = c.labels.length; });
-            for (let i = 0; i < max; i++) {
-                aoa.push(d.cols.map(function (c) { return c.labels[i] || ""; }));
+        try {
+            let bytes = buildWaitSummaryXlsx(res.data, res.waitingList);
+            let blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            downloadBlob(blob, "候考室科目汇总.xlsx");
+            if (typeof appendLog === "function") {
+                appendLog("📊 " + res.data.map(function (d) {
+                    return d.label + "：" + d.cols.map(function (c) { return "候考室" + c.waiting + " " + c.labels.length + "科"; }).join("、");
+                }).join("　｜　"));
+                appendLog("✅ 已导出「候考室科目汇总.xlsx」（每个候考室一个单元格，学科在格内换行）");
             }
-        });
-        let ws = XLSX.utils.aoa_to_sheet(aoa);
-        ws['!cols'] = res.waitingList.map(function () { return { wch: 26 }; });
-        ws['!merges'] = merges;
-        XLSX.utils.book_append_sheet(wb, ws, "候考室科目汇总");
-        XLSX.writeFile(wb, "候考室科目汇总.xls", { bookType: "xls" });
-        if (typeof appendLog === "function") {
-            appendLog("📊 " + res.data.map(function (d) {
-                return d.label + "：" + d.cols.map(function (c) { return "候考室" + c.waiting + " " + c.labels.length + "科"; }).join("、");
-            }).join("　｜　"));
-            appendLog("✅ 已导出「候考室科目汇总.xls」（4 个半天合并在同一个工作表）");
+        } catch (e) {
+            if (typeof appendLog === "function") appendLog("❌ 导出失败：" + e.message, true);
+            alert("导出失败：" + e.message);
         }
     }
 
