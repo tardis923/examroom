@@ -37,7 +37,7 @@
         .pp-page { width: 297mm; height: 209.8mm; position: relative; overflow: hidden; background: #fff; page-break-after: always; break-after: page; }
         .pp-page:last-child { page-break-after: auto; break-after: auto; }
         .pp-header { position: absolute; top: 15mm; right: 15mm; font-size: 9pt; font-weight: bold; font-family: "SimSun","宋体",serif; }
-        .pp-body { position: absolute; left: 15mm; right: 15mm; top: 20mm; bottom: 20mm; }
+        .pp-body { position: absolute; left: 15mm; right: 15mm; top: 15mm; bottom: 20mm; }
         .pp-title { margin: 0; text-align: center; font-size: 14pt; font-weight: 700; -webkit-text-stroke: 0.4pt #000; font-family: "SimSun","宋体",serif; }
         .pp-meta { display: flex; justify-content: space-between; font-size: 9pt; margin: 2.5mm 0 2mm; font-family: "SimSun","宋体",serif; }
         .pp-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; font-family: "SimSun","宋体",serif; }
@@ -79,6 +79,7 @@
         <div id="resultActions" style="display: none;">
             <div class="button-group">
                 <button class="btn btn-excel" id="downloadExcelBtn">📎 下载 Excel 编排结果</button>
+                <button class="btn btn-excel" id="waitingSummaryBtn">📊 候考室科目汇总（xls）</button>
                 <button class="btn" id="printAllBtn">🖨️ 打印 / 导出 PDF（矢量）</button>
             </div>
             <div id="headerPanel" style="background:#f4f9ff; border-radius:28px; padding:16px 20px; margin-top:18px;">
@@ -359,7 +360,7 @@
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.name)}<\/td>`;
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.examId)}<\/td>`;
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.idCard)}<\/td>`;
-            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${getFullSubjectName(stu.subjectFull)}<\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.subjectFull)}<\/td>`;
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
             html += `</tr>`;
@@ -394,6 +395,129 @@
         return pages;
     }
 
+    // ---------- 候考室科目汇总（按半天 × 候考室去重） ----------
+    let STAGE_ORDER = { "幼儿园": 0, "小学": 1, "初中": 2, "高中": 3 };
+
+    // 解析科目：“141-幼儿园” → 幼儿园；“241-小学语文” → 语文（小学）；“343-语文（初级中学）” → 语文（初中）
+    function parseSubjectParts(full) {
+        let s = deepClean(full);
+        if (!s) return { subject: "", stage: "", label: "" };
+        s = s.replace(/^[A-Za-z]*\d+[A-Za-z]?\s*[-－]\s*/, "").trim();   // 去掉学科代码
+        let stage = "", subject = s;
+        let m = s.match(/^(.*?)[（(](初级中学|高级中学|初中|高中)[）)]$/);
+        if (m) {
+            subject = m[1].trim();
+            stage = m[2] === "初级中学" ? "初中" : (m[2] === "高级中学" ? "高中" : m[2]);
+        } else if (s.indexOf("小学") === 0 && s.length > 2) {
+            stage = "小学"; subject = s.slice(2).trim();
+        } else if (s === "幼儿园") {
+            stage = "幼儿园"; subject = "幼儿园";
+        }
+        if (subject === "体育与健康") subject = "体育";   // 与“小学体育”统一
+        let label = (stage && stage !== "幼儿园") ? (subject + "（" + stage + "）") : (subject || s);
+        return { subject: subject || s, stage: stage, label: label };
+    }
+
+    function cmpSubject(a, b) {
+        let r = String(a.subject).localeCompare(String(b.subject), "zh-Hans-CN");
+        if (r !== 0) return r;
+        let oa = STAGE_ORDER[a.stage] != null ? STAGE_ORDER[a.stage] : 9;
+        let ob = STAGE_ORDER[b.stage] != null ? STAGE_ORDER[b.stage] : 9;
+        return oa - ob;
+    }
+
+    // 同学科不同学段合并成一个：语文（小学、初中、高中）
+    function groupSubjectLabels(raw) {
+        let map = new Map();
+        raw.forEach(function (p) {
+            if (!p || !p.subject) return;
+            if (!map.has(p.subject)) map.set(p.subject, { subject: p.subject, stages: {} });
+            if (p.stage) map.get(p.subject).stages[p.stage] = true;
+        });
+        let arr = Array.from(map.values());
+        arr.sort(function (a, b) { return a.subject.localeCompare(b.subject, "zh-Hans-CN"); });
+        return arr.map(function (it) {
+            let stages = Object.keys(it.stages).sort(function (a, b) {
+                let oa = STAGE_ORDER[a] != null ? STAGE_ORDER[a] : 9;
+                let ob = STAGE_ORDER[b] != null ? STAGE_ORDER[b] : 9;
+                return oa - ob;
+            });
+            if (!stages.length) return it.subject;
+            if (stages.length === 1 && stages[0] === "幼儿园") return it.subject;
+            return it.subject + "（" + stages.join("、") + "）";
+        });
+    }
+
+    function buildWaitingSubjectData() {
+        if (!latestDateOrder || latestDateOrder.length !== 2) return { ok: false, msg: "请先上传并编排数据" };
+        let [date1, date2] = latestDateOrder;
+        let halves = [
+            { date: date1, session: "AM" }, { date: date1, session: "PM" },
+            { date: date2, session: "AM" }, { date: date2, session: "PM" }
+        ];
+        let waitingSet = new Set();
+        roomRelationMap.forEach(function (v) { if (v.waiting) waitingSet.add(v.waiting); });
+        if (!waitingSet.size) return { ok: false, msg: "「面试室分布」里没有候考室列，或候考室号为空" };
+        let waitingList = Array.from(waitingSet).sort(function (a, b) { return parseInt(a) - parseInt(b); });
+
+        let result = [];
+        for (let h of halves) {
+            let cols = waitingList.map(function (w) { return { waiting: w, raw: [], seen: {} }; });
+            let byWaiting = {};
+            cols.forEach(function (c, i) { byWaiting[c.waiting] = i; });
+            for (let stu of allocatedData) {
+                let p = parseDateAndSession(stu.examDateRaw);
+                if (!p || p.date !== h.date || p.session !== h.session) continue;
+                if (!/^\d+$/.test(String(stu.interviewRoom || ""))) continue;
+                let rel = roomRelationMap.get(stu.interviewRoom);
+                if (!rel || !rel.waiting) continue;
+                let ci = byWaiting[rel.waiting];
+                if (ci == null) continue;
+                let parts = parseSubjectParts(stu.subjectFull);
+                if (!parts.subject) continue;
+                let key = parts.subject + "|" + parts.stage;
+                if (cols[ci].seen[key]) continue;
+                cols[ci].seen[key] = true;
+                cols[ci].raw.push(parts);
+            }
+            cols.forEach(function (c) { c.raw.sort(cmpSubject); c.labels = groupSubjectLabels(c.raw); });
+            result.push({ label: getSessionLabel(h.date, h.session), cols: cols });
+        }
+        return { ok: true, data: result, waitingList: waitingList };
+    }
+
+    function exportWaitingSubjectXls() {
+        let res = buildWaitingSubjectData();
+        if (!res.ok) { alert(res.msg); return; }
+        let wb = XLSX.utils.book_new();
+        let aoa = [], merges = [];
+        res.data.forEach(function (d, di) {
+            if (di > 0) aoa.push([]);                       // 半天之间空一行
+            let titleRow = aoa.length;
+            let title = [d.label];
+            for (let i = 1; i < d.cols.length; i++) title.push("");
+            aoa.push(title);
+            merges.push({ s: { r: titleRow, c: 0 }, e: { r: titleRow, c: d.cols.length - 1 } });
+            aoa.push(d.cols.map(function (c) { return "候考室 " + c.waiting; }));
+            let max = 0;
+            d.cols.forEach(function (c) { if (c.labels.length > max) max = c.labels.length; });
+            for (let i = 0; i < max; i++) {
+                aoa.push(d.cols.map(function (c) { return c.labels[i] || ""; }));
+            }
+        });
+        let ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = res.waitingList.map(function () { return { wch: 26 }; });
+        ws['!merges'] = merges;
+        XLSX.utils.book_append_sheet(wb, ws, "候考室科目汇总");
+        XLSX.writeFile(wb, "候考室科目汇总.xls", { bookType: "xls" });
+        if (typeof appendLog === "function") {
+            appendLog("📊 " + res.data.map(function (d) {
+                return d.label + "：" + d.cols.map(function (c) { return "候考室" + c.waiting + " " + c.labels.length + "科"; }).join("、");
+            }).join("　｜　"));
+            appendLog("✅ 已导出「候考室科目汇总.xls」（4 个半天合并在同一个工作表）");
+        }
+    }
+
     // ---------- 打印版（矢量文字，A4 横向，一页一个 div） ----------
     function buildPrintPageHTML(dateStr, session, room, students, headerText) {
         let displayDate = getSessionLabel(dateStr, session);
@@ -414,7 +538,7 @@
             h += '<td>' + deepClean(stu.name) + '</td>';
             h += '<td>' + deepClean(stu.examId) + '</td>';
             h += '<td>' + deepClean(stu.idCard) + '</td>';
-            h += '<td>' + getFullSubjectName(stu.subjectFull) + '</td>';
+            h += '<td>' + deepClean(stu.subjectFull) + '</td>';
             h += '<td></td><td></td></tr>';
         });
         for (let i = students.length; i < Math.max(14, students.length); i++) {
@@ -869,6 +993,8 @@
         else alert("没有编排结果，请先上传文件");
     });
     printAllBtn.addEventListener("click", printVectorPDF);
+    let waitingSummaryBtn = document.getElementById("waitingSummaryBtn");
+    if (waitingSummaryBtn) waitingSummaryBtn.addEventListener("click", exportWaitingSubjectXls);
     window.addEventListener("afterprint", function () {
         let root = document.getElementById("printRoot");
         if (root) root.innerHTML = "";
