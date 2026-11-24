@@ -36,11 +36,11 @@
         #printRoot { display: none; }
         .pp-page { width: 297mm; height: 209.8mm; position: relative; overflow: hidden; background: #fff; page-break-after: always; break-after: page; }
         .pp-page:last-child { page-break-after: auto; break-after: auto; }
-        .pp-header { position: absolute; top: 15mm; right: 15mm; font-size: 9pt; font-weight: bold; font-family: "SimSun","宋体",serif; }
+        .pp-header { position: absolute; top: 15mm; right: 15mm; font-size: 12pt; font-weight: bold; font-family: "SimSun","宋体",serif; }
         .pp-body { position: absolute; left: 15mm; right: 15mm; top: 15mm; bottom: 20mm; }
-        .pp-title { margin: 0; text-align: center; font-size: 14pt; font-weight: 700; -webkit-text-stroke: 0.4pt #000; font-family: "SimSun","宋体",serif; }
-        .pp-meta { display: flex; justify-content: space-between; font-size: 9pt; margin: 2.5mm 0 2mm; font-family: "SimSun","宋体",serif; }
-        .pp-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; font-family: "SimSun","宋体",serif; }
+        .pp-title { margin: 0; text-align: center; font-size: 18pt; font-weight: 700; -webkit-text-stroke: 0.4pt #000; font-family: "SimSun","宋体",serif; }
+        .pp-meta { display: flex; justify-content: space-between; font-size: 10pt; margin: 2.5mm 0 2mm; font-family: "SimSun","宋体",serif; }
+        .pp-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12pt; font-family: "SimSun","宋体",serif; }
         .pp-table th, .pp-table td { border: 0.3mm solid #000; height: 10.3mm; line-height: 10.3mm; text-align: center; padding: 0 1mm; font-weight: 400; overflow: hidden; white-space: nowrap; }
         .pp-table td.pp-empty { border: none; }
         @media print {
@@ -328,6 +328,9 @@
         return names;
     }
 
+    // 签到表 8 列宽度（百分比，合计必须 = 100）——屏幕预览与 PDF 共用，以后只改这一行
+    let SIGN_COL_W = [5, 12, 14, 16, 22, 8, 15, 8];
+
     // 签到表HTML - 优化字号和居中
     function buildSignSheetHTML(dateStr, session, room, students, headerText) {
         let displayDate = getSessionLabel(dateStr, session);
@@ -345,13 +348,14 @@
         html += `<table style="width:100%; border-collapse:collapse; margin:0 auto; font-size:8pt; font-family:'SimSun','宋体',serif;">`;
         html += `<thead>`;
         html += `<tr>`;
-        html += `<th style="width:5%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">序号</th>`;
-        html += `<th style="width:14%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考生姓名</th>`;
-        html += `<th style="width:16%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">准考证号</th>`;
-        html += `<th style="width:16%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">证件号</th>`;
-        html += `<th style="width:25%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考试科目</th>`;
-        html += `<th style="width:9%;border:1px solid #000; padding:4px; height:26px; font-weight:400; width:50px;">抽签顺序</th>`;
-        html += `<th style="width:15%;border:1px solid #000; padding:4px; height:26px; font-weight:400; width:60px;">考生签名</th>`;
+        html += `<th style="width:${SIGN_COL_W[0]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">序号</th>`;
+        html += `<th style="width:${SIGN_COL_W[1]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考生姓名</th>`;
+        html += `<th style="width:${SIGN_COL_W[2]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">准考证号</th>`;
+        html += `<th style="width:${SIGN_COL_W[3]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">证件号</th>`;
+        html += `<th style="width:${SIGN_COL_W[4]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考试科目</th>`;
+        html += `<th style="width:${SIGN_COL_W[5]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">抽签顺序</th>`;
+        html += `<th style="width:${SIGN_COL_W[6]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">考生签名</th>`;
+        html += `<th style="width:${SIGN_COL_W[7]}%;border:1px solid #000; padding:4px; height:26px; font-weight:400;">试题编码</th>`;
         html += `</tr>`;
         html += `</thead><tbody>`;
         students.forEach((stu, idx) => {
@@ -363,13 +367,14 @@
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;">${deepClean(stu.subjectFull)}<\/td>`;
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
             html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
+            html += `<td style="border:1px solid #000; padding:4px; height:26px; text-align:center;"><\/td>`;
             html += `</tr>`;
         });
         // 统一行高：表格固定 14 个序号行，人数不足 14 时补空白行（序号留空）
         let totalRows = Math.max(14, students.length);
         for (let i = students.length; i < totalRows; i++) {
             html += `<tr>`;
-            for (let c = 0; c < 7; c++) {
+            for (let c = 0; c < 8; c++) {
                 html += `<td style="border:none; padding:4px; height:26px; text-align:center;">&nbsp;<\/td>`;
             }
             html += `</tr>`;
@@ -542,36 +547,31 @@
     }
 
     function buildWaitSummaryXlsx(data, waitingList) {
-        const colCnt = waitingList.length;
-        const rows = [], merges = [];
-        let r = 0;
+        // 布局：A 列 = 时间，第 1 行 = 候考室表头，一行一个半天
+        const colCnt = waitingList.length + 1;
+        const rows = [];
+        let head = [xCell("A1", "时间", 2)];
+        waitingList.forEach(function (w, i) {
+            head.push(xCell(xColLetter(i + 1) + "1", "候考室 " + w, 2));
+        });
+        rows.push('<row r="1" ht="24" customHeight="1">' + head.join("") + "</row>");
+
         data.forEach(function (d, di) {
-            if (di > 0) r += 1;
-            r += 1;
-            let tCells = [];
-            for (let c = 0; c < colCnt; c++) tCells.push(xCell(xColLetter(c) + r, c === 0 ? d.label : "", 2));
-            merges.push("A" + r + ":" + xColLetter(colCnt - 1) + r);
-            rows.push('<row r="' + r + '" ht="24" customHeight="1">' + tCells.join("") + "</row>");
-
-            r += 1;
-            let hCells = [];
-            d.cols.forEach(function (c, i) { hCells.push(xCell(xColLetter(i) + r, "候考室 " + c.waiting, 3)); });
-            rows.push('<row r="' + r + '" ht="22" customHeight="1">' + hCells.join("") + "</row>");
-
-            r += 1;
+            let r = di + 2;
             let maxLabels = 0;
-            d.cols.forEach(function (c) { if (c.labels.length > maxLabels) maxLabels = c.labels.length; });
-            let iCells = [];
-            d.cols.forEach(function (c, i) { iCells.push(xCell(xColLetter(i) + r, c.labels.join("\n"), 1)); });
-            rows.push('<row r="' + r + '" ht="' + (maxLabels * 15 + 10) + '" customHeight="1">' + iCells.join("") + "</row>");
+            let cells = [xCell("A" + r, d.label, 3)];
+            d.cols.forEach(function (c, i) {
+                if (c.labels.length > maxLabels) maxLabels = c.labels.length;
+                cells.push(xCell(xColLetter(i + 1) + r, c.labels.join("\n"), 1));
+            });
+            rows.push('<row r="' + r + '" ht="' + (maxLabels * 15 + 10) + '" customHeight="1">' + cells.join("") + "</row>");
         });
 
         const sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
             '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-            '<cols><col min="1" max="' + colCnt + '" width="34" customWidth="1"/></cols>' +
+            '<cols><col min="1" max="1" width="20" customWidth="1"/>' +
+            '<col min="2" max="' + colCnt + '" width="34" customWidth="1"/></cols>' +
             "<sheetData>" + rows.join("") + "</sheetData>" +
-            (merges.length ? '<mergeCells count="' + merges.length + '">' +
-                merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join("") + "</mergeCells>" : "") +
             "</worksheet>";
 
         const stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
@@ -682,7 +682,7 @@
                 appendLog("📊 " + res.data.map(function (d) {
                     return d.label + "：" + d.cols.map(function (c) { return "候考室" + c.waiting + " " + c.labels.length + "科"; }).join("、");
                 }).join("　｜　"));
-                appendLog("✅ 已导出「候考室科目汇总.xlsx」（每个候考室一个单元格，学科在格内换行）");
+                appendLog("✅ 已导出「候考室科目汇总.xlsx」（时间在 A 列、候考室在首行，学科在格内换行）");
             }
         } catch (e) {
             if (typeof appendLog === "function") appendLog("❌ 导出失败：" + e.message, true);
@@ -702,8 +702,14 @@
         h += '<div class="pp-title">考生签到表' + locationText + '</div>';
         h += '<div class="pp-meta"><span>考场号：' + room + '　　应考人数：' + students.length + '</span><span>考试时间：' + displayDate + '</span></div>';
         h += '<table class="pp-table"><thead><tr>';
-        h += '<th style="width:5%">序号</th><th style="width:14%">考生姓名</th><th style="width:16%">准考证号</th>';
-        h += '<th style="width:16%">证件号</th><th style="width:25%">考试科目</th><th style="width:9%">抽签顺序</th><th style="width:15%">考生签名</th>';
+        h += '<th style="width:' + SIGN_COL_W[0] + '%">序号</th>';
+        h += '<th style="width:' + SIGN_COL_W[1] + '%">考生姓名</th>';
+        h += '<th style="width:' + SIGN_COL_W[2] + '%">准考证号</th>';
+        h += '<th style="width:' + SIGN_COL_W[3] + '%">证件号</th>';
+        h += '<th style="width:' + SIGN_COL_W[4] + '%">考试科目</th>';
+        h += '<th style="width:' + SIGN_COL_W[5] + '%">抽签顺序</th>';
+        h += '<th style="width:' + SIGN_COL_W[6] + '%">考生签名</th>';
+        h += '<th style="width:' + SIGN_COL_W[7] + '%">试题编码</th>';
         h += '</tr></thead><tbody>';
         students.forEach(function (stu, idx) {
             h += '<tr><td>' + (idx + 1) + '</td>';
@@ -711,10 +717,10 @@
             h += '<td>' + deepClean(stu.examId) + '</td>';
             h += '<td>' + deepClean(stu.idCard) + '</td>';
             h += '<td>' + deepClean(stu.subjectFull) + '</td>';
-            h += '<td></td><td></td></tr>';
+            h += '<td></td><td></td><td></td></tr>';
         });
         for (let i = students.length; i < Math.max(14, students.length); i++) {
-            h += '<tr><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td></tr>';
+            h += '<tr><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td></tr>';
         }
         h += '</tbody></table></div></div>';
         return h;
