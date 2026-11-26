@@ -59,7 +59,7 @@
         <div class="hero">
             <div>
                 <h1>教师资格面试 · 考场编排</h1>
-                <div class="sub">智能分配面试室 · 面试室签到表<span class="ver-badge" id="appVersion">v1.0 · 2026-11-24</span></div>
+                <div class="sub">智能分配面试室 · 面试室签到表<span class="ver-badge" id="appVersion">v1.1 · 2026-11-26</span></div>
             </div>
             <div class="sub-badge">⚡ 四个半天合并为 1 个 PDF · 多组页眉</div>
         </div>
@@ -332,6 +332,31 @@
 
     // 签到表 8 列宽度（百分比，合计必须 = 100）——屏幕预览与 PDF 共用，以后只改这一行
     let SIGN_COL_W = [5, 12, 14, 16, 22, 8, 15, 8];
+
+    // 候考室那一册不需要“试题编码”列：去掉末列，把它的宽度按比例摊给“文字类”各列
+    // （序号、抽签顺序是窄数字列，保持原宽不参与摊分），合计仍为 100
+    function signColWidths(showExamCode) {
+        if (showExamCode !== false) return SIGN_COL_W.slice();
+        let w = SIGN_COL_W.slice(0, 7);
+        let extra = SIGN_COL_W[7] || 0;
+        let NARROW = [0, 5];                      // 不参与摊分的窄列：序号、抽签顺序
+        let pool = 0;
+        w.forEach(function (v, i) { if (NARROW.indexOf(i) < 0) pool += v; });
+        if (!extra || !pool) return w;
+        let out = w.map(function (v, i) {
+            return NARROW.indexOf(i) >= 0 ? v : v + (extra * v) / pool;
+        });
+        // 取整后把误差补回去，保证合计正好 100
+        let ints = out.map(function (v) { return Math.floor(v); });
+        let rest = 100 - ints.reduce(function (a, b) { return a + b; }, 0);
+        let fracs = out.map(function (v, i) { return { i: i, f: v - Math.floor(v) }; })
+            .filter(function (o) { return NARROW.indexOf(o.i) < 0; })
+            .sort(function (a, b) { return b.f - a.f; });
+        let k = 0;
+        while (rest > 0 && fracs.length) { ints[fracs[k % fracs.length].i] += 1; rest -= 1; k += 1; }
+        while (rest < 0 && fracs.length) { ints[fracs[k % fracs.length].i] -= 1; rest += 1; k += 1; }
+        return ints;
+    }
 
     // 签到表HTML - 优化字号和居中
     function buildSignSheetHTML(dateStr, session, room, students, headerText) {
@@ -693,10 +718,15 @@
     }
 
     // ---------- 打印版（矢量文字，A4 横向，一页一个 div） ----------
-    function buildPrintPageHTML(dateStr, session, room, students, headerText) {
+    // showExamCode=false 时不打印“试题编码”列（候考室那一册用）
+    function buildPrintPageHTML(dateStr, session, room, students, headerText, showExamCode) {
+        let showCode = (showExamCode !== false);
+        let colW = signColWidths(showCode);
         let displayDate = getSessionLabel(dateStr, session);
         let rel = roomRelationMap.get(room) || {};
         let locationText = rel.location ? "（" + rel.location + "）" : "";
+        let heads = ["序号", "考生姓名", "准考证号", "证件号", "考试科目", "抽签顺序", "考生签名"];
+        if (showCode) heads.push("试题编码");
         let h = "";
         h += '<div class="pp-page">';
         h += '<div class="pp-header">' + (headerText || "") + '</div>';
@@ -704,14 +734,9 @@
         h += '<div class="pp-title">考生签到表' + locationText + '</div>';
         h += '<div class="pp-meta"><span>考场号：' + room + '　　应考人数：' + students.length + '</span><span>考试时间：' + displayDate + '</span></div>';
         h += '<table class="pp-table"><thead><tr>';
-        h += '<th style="width:' + SIGN_COL_W[0] + '%">序号</th>';
-        h += '<th style="width:' + SIGN_COL_W[1] + '%">考生姓名</th>';
-        h += '<th style="width:' + SIGN_COL_W[2] + '%">准考证号</th>';
-        h += '<th style="width:' + SIGN_COL_W[3] + '%">证件号</th>';
-        h += '<th style="width:' + SIGN_COL_W[4] + '%">考试科目</th>';
-        h += '<th style="width:' + SIGN_COL_W[5] + '%">抽签顺序</th>';
-        h += '<th style="width:' + SIGN_COL_W[6] + '%">考生签名</th>';
-        h += '<th style="width:' + SIGN_COL_W[7] + '%">试题编码</th>';
+        heads.forEach(function (t, i) {
+            h += '<th style="width:' + colW[i] + '%">' + t + '</th>';
+        });
         h += '</tr></thead><tbody>';
         students.forEach(function (stu, idx) {
             h += '<tr><td>' + (idx + 1) + '</td>';
@@ -719,10 +744,14 @@
             h += '<td>' + deepClean(stu.examId) + '</td>';
             h += '<td>' + deepClean(stu.idCard) + '</td>';
             h += '<td>' + deepClean(stu.subjectFull) + '</td>';
-            h += '<td></td><td></td><td></td></tr>';
+            h += '<td></td><td></td>';
+            if (showCode) h += '<td></td>';
+            h += '</tr>';
         });
         for (let i = students.length; i < Math.max(14, students.length); i++) {
-            h += '<tr><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td><td class="pp-empty"></td></tr>';
+            h += '<tr>';
+            for (let c = 0; c < colW.length; c++) h += '<td class="pp-empty"></td>';
+            h += '</tr>';
         }
         h += '</tbody></table></div></div>';
         return h;
@@ -767,7 +796,9 @@
                 for (let room of rooms) {
                     let stuList = grp.students.filter(function (s) { return s.interviewRoom === room; });
                     if (!stuList.length) continue;
-                    html += buildPrintPageHTML(grp.date, grp.session, room, stuList, headerTextFor(g, room));
+                    // 页眉是“候考室”的那一册不打印试题编码列
+                    let isWaitingGroup = String(g || "").indexOf("候考") >= 0;
+                    html += buildPrintPageHTML(grp.date, grp.session, room, stuList, headerTextFor(g, room), !isWaitingGroup);
                     count++;
                 }
             }
